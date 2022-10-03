@@ -52,6 +52,10 @@ public class SocketConnection {
         }
     }
 
+    /**
+     * Read a handshake message
+     * @return the handshake message as a byte array
+     */
     public byte[] readHandshake() {
         try {
             byte[] handshake = new byte[32];

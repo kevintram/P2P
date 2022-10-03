@@ -27,6 +27,7 @@ public class ServerSocketConnection {
         }
     }
 
+    // client handlers for this server socket connection
     public interface HandlerFactory {
         Runnable makeHandler(Socket socket);
     }

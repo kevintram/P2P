@@ -29,23 +29,20 @@ public class Peer {
 
     public void run() {
         connectToPrevPeers();
-
-        ServerSocketConnection s = new ServerSocketConnection(port, new ClientHandlerFactory());
-        s.run();
+        new ServerSocketConnection(port, new ClientHandlerFactory()).run();
     }
 
     private void connectToPrevPeers() {
         int curr = peerID;
         while (--curr >= 1001) {
-            connect(curr);
+            connectTo(curr);
             if (shakeHands(curr)) {
                 System.out.println("Hand shake successful");
             }
         }
     }
 
-    private void connect(int peerID) {
-        System.out.println("Connecting to peer " + peerID);
+    private void connectTo(int peerID) {
         PeerInfo p = peerInfo.get(peerID);
         SocketConnection c = new SocketConnection(p.hostName, p.port);
         c.run();
@@ -53,42 +50,44 @@ public class Peer {
     }
 
     /**
-     * Tries to shake hands with peer
+     * Sends a handshake message to the peer with the corresponding peerID
      * @return the success of the handshake
      */
-    public boolean shakeHands(int peerID) {
-        System.out.println("Shaking hands!");
-        SocketConnection peer = clients.get(peerID);
-        peer.send(makeHandshake());
-        byte[] res = peer.readHandshake();
+    public boolean shakeHands(int peerId) {
+        SocketConnection peer = clients.get(peerId);
 
-        System.out.println("Got something back!");
+        if (peer == null) {
+            throw new RuntimeException("ERROR: Tried shaking hands with an invalid peerID!");
+        }
 
-        byte[] header = Arrays.copyOf(res, 18);
+        peer.send(getHandshakeMessage());
+        byte[] returnHandshake = peer.readHandshake();
+
+        // check if return message has correct header and peerId
+        byte[] header = Arrays.copyOf(returnHandshake, 18);
         boolean hasCorrectHeader = Arrays.equals(header, "P2PFILESHARINGPROJ".getBytes());
 
-        byte[] bufferArr = Arrays.copyOfRange(res, 28, 32);
-        int resPeerId = fromByteArray(bufferArr);
-        boolean hasCorrectId = resPeerId == peerID;
-
-        System.out.println(hasCorrectHeader);
-        System.out.println(hasCorrectId);
-        System.out.println(resPeerId);
-        System.out.println(Arrays.toString(res));
-        System.out.println(Arrays.toString(bufferArr));
+        byte[] peerIdBuffer = Arrays.copyOfRange(returnHandshake, 28, 32);
+        int resPeerId = fromByteArray(peerIdBuffer);
+        boolean hasCorrectId = resPeerId == peerId;
 
         return hasCorrectHeader && hasCorrectId;
     }
 
-    private byte[] makeHandshake() {
+    /**
+     * @return the byte array of this peer's handshake message
+     */
+    private byte[] getHandshakeMessage() {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         try {
+            // write header
             baos.write("P2PFILESHARINGPROJ".getBytes());
+            // write 10-byte 0 bits
             for (int i = 0; i < 10; i++) {
                 baos.write(0);
             }
-            System.out.println(peerID);
+            // write peer id
             baos.write(toByteArray(peerID));
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -109,19 +108,21 @@ public class Peer {
         private InputStream in;
         private OutputStream out;
 
-        public ClientHandler(Socket client) {
+        public ClientHandler(Socket client)  {
             this.client = client;
+            try {
+                in = client.getInputStream();
+                out = client.getOutputStream();
+                out.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         @Override
         public void run() {
             try {
-                in = client.getInputStream();
-                out = client.getOutputStream();
-                out.flush();
-
-                System.out.println("Server is reading!");
-
+                // read and reciprocate handshake
                 byte[] header = new byte[18];
                 in.read(header, 0, 18);
                 boolean isHandshake = Arrays.equals(
@@ -129,11 +130,8 @@ public class Peer {
                         "P2PFILESHARINGPROJ".getBytes()
                 );
 
-                System.out.println(isHandshake);
-
                 if (isHandshake) {
-                    System.out.println("Reciprocating the handshake!");
-                    out.write(makeHandshake());
+                    out.write(getHandshakeMessage());
                     out.flush();
                 }
             } catch (IOException e) {
@@ -142,7 +140,7 @@ public class Peer {
         }
     }
 
-    // array of 4 bytes to an int
+    // get int from array of 4 bytes
     public static int fromByteArray(byte[] bytes) {
         return ((bytes[0] & 0xFF) << 24) |
                 ((bytes[1] & 0xFF) << 16) |
@@ -150,7 +148,7 @@ public class Peer {
                 ((bytes[3] & 0xFF) << 0 );
     }
 
-    // an int to an array of 4 bytes
+    // convert int to array of 4 bytes
     public static byte[] toByteArray(int i) {
         return ByteBuffer.allocate(4).putInt(i).array();
     }
