@@ -2,29 +2,32 @@ import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-public class SocketConnection {
+public class PeerConnection {
     private Socket socket;
     private OutputStream out;
     private InputStream in;
 
-    private final String hostName;
-    private final int port;
-
-    public SocketConnection(String hostName, int port) {
-        this.hostName = hostName;
-        this.port = port;
-    }
-
-    public void run() {
-        connect();
-    }
-
-    private void connect() {
+    public PeerConnection(String hostName, int port) {
         try {
             socket = new Socket(hostName, port);
             in = socket.getInputStream();
+
+            out = socket.getOutputStream();
+            out.flush();
         } catch(UnknownHostException e) {
             System.err.println("Tried connecting to an unknown host: " + hostName);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public PeerConnection(Socket socket) {
+        try {
+            this.socket = socket;
+            in = socket.getInputStream();
+
+            out = socket.getOutputStream();
+            out.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -41,29 +44,30 @@ public class SocketConnection {
     }
 
     /**
-     * Sends a message through the connection
+     * Sends a byte array through the connection
+     * @param msg the msg to send
      */
     public void send(byte[] msg) {
         try {
-            out = socket.getOutputStream();
             out.write(msg);
+            out.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     /**
-     * Read a handshake message
-     * @return the handshake message as a byte array
+     * Reads a message from the connection
+     * @param buf the buffer into which the data is read
+     * @param len the length of the message in bytes
+     * @return the total number of bytes read into the buffer
      */
-    public byte[] readHandshake() {
+    public int read(byte[] buf, int len) {
         try {
-            byte[] handshake = new byte[32];
-            in.read(handshake);
-            return handshake;
+            return in.read(buf, 0, len);
         } catch (IOException e) {
             e.printStackTrace();
-            return null;
+            return -1;
         }
     }
 }
