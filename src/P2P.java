@@ -1,3 +1,5 @@
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.Arrays;
 import java.util.List;
 
@@ -8,10 +10,13 @@ public class P2P {
         List<Peer> config = parseConfigFile();
         Peer us = tryToFindUs(id, config);
 
+        PeerState state = new PeerState(us, config);
+
         PeerTalker process = new PeerTalker();
-        process.state = new PeerState(us, config);
+        process.state = state;
 
         process.run();
+        runServer(state);
     }
 
     public static List<Peer> parseConfigFile() {
@@ -42,5 +47,20 @@ public class P2P {
         }
 
         return us;
+    }
+
+    public static void runServer(PeerState state) {
+        try {
+            ServerSocket server = new ServerSocket(state.us.port);
+            try {
+                while (true) {
+                    new PeerResponder(server.accept(), state).run();
+                }
+            } finally {
+                server.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

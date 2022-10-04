@@ -1,8 +1,5 @@
 import messages.Handshake;
 
-import java.io.IOException;
-import java.net.ServerSocket;
-
 /**
  * Deals with talking to peers
  */
@@ -10,14 +7,7 @@ public class PeerTalker {
     protected PeerState state;
 
     public void run() {
-        connectToPrevPeers();
-        runServer();
-    }
-
-    /**
-     * Connect to peers with id's less than ours
-     */
-    private void connectToPrevPeers() {
+        // Connect to peers with id's less than ours
         int currId = state.us.id;
         while (--currId >= 1001) {
             // make a connection
@@ -37,24 +27,6 @@ public class PeerTalker {
             if (new Handshake(res).equals(new Handshake(currId))) {
                 System.out.println("Shook hands with " + currId);
             }
-        }
-    }
-
-    /**
-     * Runs a server at our port
-     */
-    private void runServer() {
-        try {
-            ServerSocket server = new ServerSocket(state.us.port);
-            try {
-                while (true) {
-                    new PeerResponder(server.accept(), state).run();
-                }
-            } finally {
-                server.close();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 }
