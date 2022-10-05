@@ -12,14 +12,12 @@ public class P2P {
 
         PeerState state = new PeerState(us, config);
 
-        PeerTalker process = new PeerTalker();
-        process.state = state;
-
-        process.run();
+        startTalking(state);
         runServer(state);
     }
 
     public static List<Peer> parseConfigFile() {
+        // TODO: actually parse the config file
         return Arrays.asList(
                 new Peer(1001, "localhost", 6001, true),
                 new Peer(1002, "localhost", 6002, false),
@@ -30,12 +28,12 @@ public class P2P {
         );
     }
 
-    public static Peer tryToFindUs(int id, List<Peer> config) {
+    public static Peer tryToFindUs(int ourId, List<Peer> config) {
         Peer us = null;
         boolean foundUs = false;
 
         for (Peer p : config) {
-            if (p.id == id) {
+            if (p.id == ourId) {
                 us = p;
                 foundUs = true;
                 break;
@@ -53,6 +51,7 @@ public class P2P {
         try {
             ServerSocket server = new ServerSocket(state.us.port);
             try {
+                // when a peer tries to connect to us, run a PeerResponder
                 while (true) {
                     new PeerResponder(server.accept(), state).run();
                 }
@@ -62,5 +61,9 @@ public class P2P {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static void startTalking(PeerState state) {
+        new PeerTalker(state).run();
     }
 }

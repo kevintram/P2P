@@ -2,10 +2,10 @@ package messages;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import static messages.Util.byteArrToInt;
+import static messages.Util.intToByteArr;
 
 public class Handshake {
     public String header;
@@ -29,15 +29,15 @@ public class Handshake {
 
         try {
             // write header
-            baos.write("P2PFILESHARINGPROJ".getBytes());
+            baos.write(header.getBytes());
 
-            // write 10-byte 0 bits
+            // write 10 bytes of 0 bits
             for (int i = 0; i < 10; i++) {
                 baos.write(0);
             }
 
             // write peer id
-            baos.write(ByteBuffer.allocate(4).putInt(id).array());
+            baos.write(intToByteArr(id));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

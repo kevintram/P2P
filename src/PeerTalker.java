@@ -4,17 +4,21 @@ import messages.Handshake;
  * Deals with talking to peers
  */
 public class PeerTalker {
-    protected PeerState state;
+    protected final PeerState state;
+
+    public PeerTalker(PeerState state) {
+        this.state = state;
+    }
 
     public void run() {
         // Connect to peers with id's less than ours
-        int currId = state.us.id;
-        while (--currId >= 1001) {
+        int id = state.us.id;
+        while (--id >= 1001) {
             // make a connection
-            Peer peer = state.getPeerById(currId);
-            PeerConnection conn = new PeerConnection(peer.hostName, peer.port);
-            peer.connection = conn;
-            System.out.println("Made a connection to " + currId);
+            Peer Peer = state.getPeerById(id);
+            PeerConnection conn = new PeerConnection(Peer.hostName, Peer.port);
+            Peer.connection = conn;
+            System.out.println("Made a connection to " + id);
 
             // send a handshake
             conn.send(new Handshake(state.us.id).toByteArray());
@@ -24,8 +28,8 @@ public class PeerTalker {
             conn.read(res, 32);
 
             // check if response is right
-            if (new Handshake(res).equals(new Handshake(currId))) {
-                System.out.println("Shook hands with " + currId);
+            if (new Handshake(res).equals(new Handshake(id))) {
+                System.out.println("Shook hands with " + id);
             }
         }
     }

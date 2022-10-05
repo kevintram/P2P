@@ -11,8 +11,8 @@ public class PeerResponder extends PeerTalker implements Runnable {
     private final PeerConnection conn;
 
     public PeerResponder(Socket socket, PeerState state)  {
+        super(state);
         conn = new PeerConnection(socket);
-        this.state = state;
     }
 
     @Override

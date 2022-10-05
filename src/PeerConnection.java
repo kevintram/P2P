@@ -1,4 +1,5 @@
 import java.io.*;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
@@ -16,6 +17,10 @@ public class PeerConnection {
             out.flush();
         } catch(UnknownHostException e) {
             System.err.println("Tried connecting to an unknown host: " + hostName);
+            throw new RuntimeException();
+        } catch (ConnectException e) {
+            System.err.println("Connection refused. Need to start peer at hostname " + hostName + " and port " + port);
+            throw new RuntimeException();
         } catch (IOException e) {
             e.printStackTrace();
         }
