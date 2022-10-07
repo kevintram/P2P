@@ -13,16 +13,17 @@ public class Handshake {
 
     public Handshake(byte[] b) {
         byte[] headerBuf = Arrays.copyOf(b, 18);
-        header = new String(headerBuf);
+        this.header = new String(headerBuf);
 
         byte[] idBuf = Arrays.copyOfRange(b, 28, 32);
-        id = byteArrToInt(idBuf);
+        this.id = byteArrToInt(idBuf);
     }
 
     public Handshake(int id) {
-        header = "P2PFILESHARINGPROJ";
+        this.header = "P2PFILESHARINGPROJ";
         this.id = id;
     }
+
 
     public byte[] toByteArray() {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();

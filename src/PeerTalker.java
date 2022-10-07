@@ -15,22 +15,25 @@ public class PeerTalker {
         int id = state.us.id;
         while (--id >= 1001) {
             // make a connection
-            Peer Peer = state.getPeerById(id);
-            PeerConnection conn = new PeerConnection(Peer.hostName, Peer.port);
-            Peer.connection = conn;
-            System.out.println("Made a connection to " + id);
+            try {
+                Peer Peer = state.getPeerById(id);
+                PeerConnection conn = new PeerConnection(Peer.hostName, Peer.port);
+                Peer.connection = conn;
+                System.out.println("Made a connection to " + id);
 
-            // send a handshake
-            conn.send(new Handshake(state.us.id).toByteArray());
+                // send a handshake
+                conn.send(new Handshake(state.us.id).toByteArray());
 
-            // read response
-            byte[] res = new byte[32];
-            conn.read(res, 32);
+                // read response
+                byte[] res = new byte[32];
+                conn.read(res, 32);
 
-            // check if response is right
-            if (new Handshake(res).equals(new Handshake(id))) {
-                System.out.println("Shook hands with " + id);
-            }
+                // check if response is right
+                if (new Handshake(res).equals(new Handshake(id))) {
+                    System.out.println("Shook hands with " + id);
+                }
+            } catch (Exception ignored){}
+
         }
     }
 }

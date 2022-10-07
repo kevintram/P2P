@@ -1,10 +1,12 @@
-import java.io.IOException;
+import java.io.*;
 import java.net.ServerSocket;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class P2P {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         int id = Integer.parseInt(args[0]);
 
         List<Peer> config = parseConfigFile();
@@ -16,16 +18,22 @@ public class P2P {
         runServer(state);
     }
 
-    public static List<Peer> parseConfigFile() {
-        // TODO: actually parse the config file
-        return Arrays.asList(
-                new Peer(1001, "localhost", 6001, true),
-                new Peer(1002, "localhost", 6002, false),
-                new Peer(1003, "localhost", 6003, false),
-                new Peer(1004, "localhost", 6004, false),
-                new Peer(1005, "localhost", 6005, false),
-                new Peer(1006, "localhost", 6006, false)
-        );
+    public static List<Peer> parseConfigFile() throws IOException {
+        ArrayList<Peer> peers = new ArrayList<>();
+        //TODO fix path to work locally
+        File file = new File("C:\\Users\\lackt\\Documents\\UF\\Fall 2022\\CNT4007\\P2P\\config\\PeerInfo.cfg");
+        BufferedReader br = new BufferedReader(new FileReader(file));
+        String ss[];
+        String s;
+        int id;
+        String hostname;
+        int port;
+        boolean hasFile;
+        while ((s = br.readLine()) != null){
+            ss = s.split(" ");
+            peers.add(new Peer(Integer.parseInt(ss[0]), ss[1], Integer.parseInt(ss[2]), (Integer.parseInt(ss[3]) == 1)));
+        }
+        return peers;
     }
 
     public static Peer tryToFindUs(int ourId, List<Peer> config) {
