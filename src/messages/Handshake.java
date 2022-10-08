@@ -24,7 +24,7 @@ public class Handshake {
         this.id = id;
     }
 
-
+    //TODO I think this handshake is the same every time its called? unnecessary computation to do more than once if it is
     public byte[] toByteArray() {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 

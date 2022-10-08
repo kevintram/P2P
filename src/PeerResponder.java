@@ -1,3 +1,4 @@
+import messages.BitField;
 import messages.Handshake;
 
 import java.net.Socket;
@@ -27,11 +28,12 @@ public class PeerResponder extends PeerTalker implements Runnable {
         // send back handshake
         conn.send(new Handshake(state.us.id).toByteArray());
         System.out.println("Shook hands with " + peer.id);
-
         // read bitfield
 
         // send bitfield
-
+        //TODO imma be honest, idk if this works but we'll see ig
+        BitField bitField = new BitField(peer.bitField, peer.fileSize/ peer.pieceSize);
+        conn.send(bitField.bitfield);
         // read messages and respond accordingly
     }
 }

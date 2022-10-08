@@ -12,7 +12,7 @@ public class Peer {
     public final boolean hasFile;
     public PeerConnection connection;
 
-    public int bitField[];
+    public byte bitField[];
 
     public int prefNeigh;
     public int unchokeInterval;
@@ -30,9 +30,9 @@ public class Peer {
         this.port = port;
         this.hasFile = hasFile;
         parseCommonCfg();
-        bitField = new int[fileSize/pieceSize];
+        this.bitField = new byte[fileSize/pieceSize];
         if(hasFile) {
-            Arrays.fill(bitField,1);
+            Arrays.fill(bitField, Integer.valueOf(1).byteValue());
             hasPiece = true;
         }
     }
