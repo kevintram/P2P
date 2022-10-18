@@ -10,7 +10,7 @@ public class PeerMessage {
 
     }
 
-    PeerMessage(int len, Type type, byte[] payload) {
+    public PeerMessage(int len, Type type, byte[] payload) {
 
     }
 
@@ -18,7 +18,26 @@ public class PeerMessage {
         return null;
     }
 
-    enum Type {
+    @Override
+    public boolean equals(Object obj) {
+        if (obj.getClass() != this.getClass()) {
+            return false;
+        } else {
+            PeerMessage other = (PeerMessage) obj;
+            if(other.len == this.len &&
+                other.type == this.type) {
+                for(int i = 0; i < this.len; i++){
+                    if(this.payload[i] != other.payload[i]){
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+    }
+
+    public enum Type {
         CHOKE, UNCHOKE,
         INTERESTED, NOT_INTERESTED,
         HAVE, BITFIELD,

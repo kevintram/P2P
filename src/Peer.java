@@ -12,7 +12,7 @@ public class Peer {
     public final boolean hasFile;
     public PeerConnection connection;
 
-    public byte bitField[];
+    private byte bitField[];
 
     public int prefNeigh;
     public int unchokeInterval;
@@ -21,7 +21,6 @@ public class Peer {
     public int fileSize;
     public int pieceSize;
 
-    boolean hasPiece = false;
 
 
     public Peer(int id, String hostName, int port, boolean hasFile) throws IOException {
@@ -30,11 +29,28 @@ public class Peer {
         this.port = port;
         this.hasFile = hasFile;
         parseCommonCfg();
-        this.bitField = new byte[fileSize/pieceSize];
+        //if the number of pieces isnt divisible by 8, needs trailing 0's
+        this.bitField = new byte[fileSize/pieceSize + (8 - ((fileSize/pieceSize) % 8))];
         if(hasFile) {
+            //fills array with 1's if it has file
             Arrays.fill(bitField, Integer.valueOf(1).byteValue());
-            hasPiece = true;
+        } else {
+            Arrays.fill(bitField, Integer.valueOf(0).byteValue());
         }
+        for(int i = 0; i < (8 - ((fileSize/pieceSize) % 8)); i++){
+            //minus one here should offset counting at 0, but may cause wipe of last piece
+            bitField[(fileSize/pieceSize + i) - 1] = 0;
+        }
+    }
+
+    public boolean updateBitField(int index) {
+        try {
+            this.bitField[index] = 1;
+        } catch (ArrayIndexOutOfBoundsException e){
+            System.out.println("could not update bitfield, piece out of bounds");
+            return false;
+        }
+        return true;
     }
     //idk where this makes more sense, but since all peers follow it will stay const in state
     private void parseCommonCfg() throws IOException {
@@ -60,5 +76,18 @@ public class Peer {
         ss = br.readLine().split(" ");
         this.pieceSize = Integer.parseInt(ss[1]);
     }
+    //ensures if the bitfield is retrieved, it will have right number of bits
+    public void makeBitfield(byte[] buf) {
+        int len = this.fileSize/this.pieceSize;
+        int overflow = 8 - (len % 8);
+        try {
 
+        } catch (ArrayIndexOutOfBoundsException e) {
+            System.out.println("bitfield retrieved wrong length");
+        }
+    }
+
+    public final byte[] getBitField() {
+        return bitField;
+    }
 }
