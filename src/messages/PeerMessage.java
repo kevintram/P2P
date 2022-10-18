@@ -6,12 +6,16 @@ public class PeerMessage {
     public byte[] payload;
 
     // parse an array of bytes to construct a message
-    PeerMessage(byte[] b) {
+    PeerMessage(int len, byte[] b) {
 
     }
 
     PeerMessage(int len, Type type, byte[] payload) {
 
+    }
+
+    byte[] toByteArray() {
+        return null;
     }
 
     enum Type {

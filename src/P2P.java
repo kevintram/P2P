@@ -1,27 +1,26 @@
 import java.io.*;
 import java.net.ServerSocket;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class P2P {
     public static void main(String[] args) throws IOException {
         int id = Integer.parseInt(args[0]);
 
-        List<Peer> config = parseConfigFile();
-        Peer us = tryToFindUs(id, config);
+        List<Peer> peers = parsePeerInfo();
+        Peer us = tryToFindUs(id, peers);
 
-        PeerState state = new PeerState(us, config);
+        PeerState state = new PeerState(us, peers);
 
+        //TODO make these run as separate threads
         startTalking(state);
         runServer(state);
     }
-
-    public static List<Peer> parseConfigFile() throws IOException {
+    //TODO fix to not make self a peer
+    public static List<Peer> parsePeerInfo() throws IOException {
         ArrayList<Peer> peers = new ArrayList<>();
-        //TODO fix path to work locally
-        File file = new File("C:\\Users\\lackt\\Documents\\UF\\Fall 2022\\CNT4007\\P2P\\config\\PeerInfo.cfg");
+        //TODO probably works
+        File file = new File(".\\config\\PeerInfo.cfg");
         BufferedReader br = new BufferedReader(new FileReader(file));
         String ss[];
         String s;

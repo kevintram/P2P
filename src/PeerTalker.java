@@ -13,6 +13,7 @@ public class PeerTalker {
     public void run() {
         // Connect to peers with id's less than ours
         int id = state.us.id;
+        //TODO make this not hardcoded
         while (--id >= 1001) {
             // make a connection
             try {
