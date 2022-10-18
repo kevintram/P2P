@@ -37,7 +37,7 @@ public class PeerResponder extends PeerTalker implements Runnable {
 
                 // send bitfield
         //TODO imma be honest, idk if this works but we'll see ig
-        PeerMessage msg = new PeerMessage(peer.fileSize/ peer.pieceSize, PeerMessage.Type.BITFIELD, peer.bitField);
+        PeerMessage msg = new PeerMessage(peer.fileSize/ peer.pieceSize, PeerMessage.Type.BITFIELD, peer.getBitField());
         conn.send(msg.payload);
         // read messages and respond accordingly
     }

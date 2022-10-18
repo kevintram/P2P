@@ -81,7 +81,10 @@ public class Peer {
         int len = this.fileSize/this.pieceSize;
         int overflow = 8 - (len % 8);
         try {
-
+            for(int i = 0; i < len; i++) {
+                //buffer is full bitfield msg, so skip len and type (5 bytes)
+                this.bitField[i] = buf[4+i];
+            }
         } catch (ArrayIndexOutOfBoundsException e) {
             System.out.println("bitfield retrieved wrong length");
         }
