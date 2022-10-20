@@ -26,5 +26,17 @@ public class BitField {
         }
         return indices;
     }
+    /*
+    returns an arraylist of what we dont have, we send have for everything we have they dont
+     */
+    public static ArrayList<Integer> doesntHave(byte[] bf1, byte[] bf2, int len){
+        ArrayList<Integer> indices = new ArrayList<>();
+        for(int i = 0; i < len; i++) {
+            if(bf1[i] == 1 && bf2[i] == 0){
+                indices.add(i);
+            }
+        }
+        return indices;
+    }
 
 }

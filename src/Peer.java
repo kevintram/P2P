@@ -1,3 +1,6 @@
+import messages.BitField;
+import messages.PeerMessage;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -24,6 +27,7 @@ public class Peer {
 
 
     public Peer(int id, String hostName, int port, boolean hasFile) throws IOException {
+
         this.id = id;
         this.hostName = hostName;
         this.port = port;
@@ -44,6 +48,7 @@ public class Peer {
     }
 
     public boolean updateBitField(int index) {
+
         try {
             this.bitField[index] = 1;
         } catch (ArrayIndexOutOfBoundsException e){
@@ -54,7 +59,7 @@ public class Peer {
     }
     //idk where this makes more sense, but since all peers follow it will stay const in state
     private void parseCommonCfg() throws IOException {
-        //TODO fix path to work locally
+
         File file = new File("C:\\Users\\lackt\\Documents\\UF\\Fall 2022\\CNT4007\\P2P\\config\\common.cfg");
         BufferedReader br = new BufferedReader(new FileReader(file));
         String ss[];
@@ -78,6 +83,7 @@ public class Peer {
     }
     //ensures if the bitfield is retrieved, it will have right number of bits
     public void makeBitfield(byte[] buf) {
+
         int len = this.fileSize/this.pieceSize;
         int overflow = 8 - (len % 8);
         try {
@@ -89,8 +95,19 @@ public class Peer {
             System.out.println("bitfield retrieved wrong length");
         }
     }
+    //find what we have that they dont, return have messages to send for all of those
+    public ArrayList<PeerMessage> sendHaves(PeerMessage bitfieldPacket) {
+
+        ArrayList<PeerMessage> haveMsgs = new ArrayList<>();
+        ArrayList<Integer> indices = BitField.doesntHave(this.bitField, bitfieldPacket.payload, fileSize/pieceSize);
+        for(int i : indices){
+            //TODO make have messages
+        }
+        return haveMsgs;
+    }
 
     public final byte[] getBitField() {
+
         return bitField;
     }
 }
