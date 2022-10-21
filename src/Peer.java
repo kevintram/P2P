@@ -23,7 +23,7 @@ public class Peer {
     public String fileName;
     public int fileSize;
     public int pieceSize;
-
+    public int pieceCount;
 
 
     public Peer(int id, String hostName, int port, boolean hasFile) throws IOException {
@@ -80,6 +80,8 @@ public class Peer {
 
         ss = br.readLine().split(" ");
         this.pieceSize = Integer.parseInt(ss[1]);
+
+        this.pieceCount = fileSize/pieceSize;
     }
     //ensures if the bitfield is retrieved, it will have right number of bits
     public void makeBitfield(byte[] buf) {

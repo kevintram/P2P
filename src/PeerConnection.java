@@ -1,8 +1,10 @@
+import messages.Util;
+
 import java.io.*;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.UnknownHostException;
-
+//TODO set up a thread system so we can download from multiple clients and upload to multiple
 public class PeerConnection {
     private Socket socket;
     private OutputStream out;
@@ -74,5 +76,9 @@ public class PeerConnection {
             e.printStackTrace();
             return -1;
         }
+    }
+
+    public final Socket getSocket(){
+        return this.socket;
     }
 }
