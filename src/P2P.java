@@ -16,7 +16,6 @@ public class P2P {
         startTalking(state);
         runServer(state);
     }
-    //TODO fix to not make self a peer
     public static List<Peer> parsePeerInfo() throws IOException {
         ArrayList<Peer> peers = new ArrayList<>();
         //TODO probably works
@@ -24,7 +23,6 @@ public class P2P {
         BufferedReader br = new BufferedReader(new FileReader(file));
         String ss[];
         String s;
-        int id;
         String hostname;
         int port;
         boolean hasFile;
