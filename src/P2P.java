@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class P2P {
+
     public static void main(String[] args) throws IOException {
         int id = Integer.parseInt(args[0]);
 
@@ -16,6 +17,7 @@ public class P2P {
         startTalking(state);
         runServer(state);
     }
+
     public static List<Peer> parsePeerInfo() throws IOException {
         ArrayList<Peer> peers = new ArrayList<>();
         //TODO probably works

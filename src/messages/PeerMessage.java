@@ -8,7 +8,11 @@ public class PeerMessage {
     // parse an array of bytes to construct a message
     PeerMessage(byte[] b) {
         // find length using byte array to int converter in Util
-        this.len = Util.byteArrToInt(b);
+        byte[] length = new byte[4];
+        for(int i = 0; i < 4; i++){
+            length[i] = b[i];
+        }
+        this.len = Util.byteArrToInt(length);
         // assign type to variable for switch statement for use w/ enums
         int payloadType = b[5];
         // switch statement to assign enum types to this.type
@@ -95,6 +99,7 @@ public class PeerMessage {
         return arrOut;
     }
 
+    //used to check if 2 messages are the same, not just payload
     @Override
     public boolean equals(Object obj) {
         if (obj.getClass() != this.getClass()) {
