@@ -17,6 +17,7 @@ public class PeerTalker {
         while (--id >= 1001) {
             // make a connection
             try {
+
                 Peer Peer = state.getPeerById(id);
                 PeerConnection conn = new PeerConnection(Peer.hostName, Peer.port);
                 Peer.connection = conn;

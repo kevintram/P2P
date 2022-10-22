@@ -6,11 +6,13 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 //TODO set up a thread system so we can download from multiple clients and upload to multiple
 public class PeerConnection {
+
     private Socket socket;
     private OutputStream out;
     private InputStream in;
 
     public PeerConnection(String hostName, int port) {
+
         try {
             socket = new Socket(hostName, port);
             in = socket.getInputStream();
@@ -29,6 +31,7 @@ public class PeerConnection {
     }
 
     public PeerConnection(Socket socket) {
+
         try {
             this.socket = socket;
             in = socket.getInputStream();
@@ -41,6 +44,7 @@ public class PeerConnection {
     }
 
     public void close() {
+
         try {
             in.close();
             out.close();
@@ -55,6 +59,7 @@ public class PeerConnection {
      * @param msg the msg to send
      */
     public void send(byte[] msg) {
+
         try {
             out.write(msg);
             out.flush();
@@ -70,6 +75,7 @@ public class PeerConnection {
      * @return the total number of bytes read into the buffer
      */
     public int read(byte[] buf, int len) {
+
         try {
             return in.read(buf, 0, len);
         } catch (IOException e) {

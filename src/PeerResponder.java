@@ -11,6 +11,7 @@ import java.util.ArrayList;
  */
 // TODO: idk if this should extend PeerProcess but I feel like they would have a lot of overlap in functionality
 public class PeerResponder extends PeerTalker implements Runnable {
+
     private Peer peer;
     private final PeerConnection conn;
 
@@ -46,6 +47,7 @@ public class PeerResponder extends PeerTalker implements Runnable {
         int size;
         int type;
         while (conn.getSocket().isConnected()) {
+
             try{
                 //set for getting message length
                 buf = new byte[4];
