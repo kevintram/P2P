@@ -33,7 +33,9 @@ public class PeerTalker {
                 if (new Handshake(res).equals(new Handshake(id))) {
                     System.out.println("Shook hands with " + id);
                 }
-            } catch (Exception ignored){}
+            } catch (Exception ignored){
+                //not sure if we will need to handle this later
+            }
 
         }
     }

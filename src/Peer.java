@@ -47,6 +47,7 @@ public class Peer {
         }
     }
 
+    //updates the bitfield so that it keeps up with pieces being downloaded
     public boolean updateBitField(int index) {
 
         try {
@@ -104,6 +105,7 @@ public class Peer {
         ArrayList<Integer> indices = BitField.doesntHave(this.bitField, bitfieldPacket.payload, fileSize/pieceSize);
         for(int i : indices){
             //TODO make have messages
+            //once theyre made, will need to be sent one at a time, and await a interested or not
         }
         return haveMsgs;
     }

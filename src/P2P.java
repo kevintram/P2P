@@ -35,6 +35,7 @@ public class P2P {
         return peers;
     }
 
+    //finds current host in the list of peers so we dont send to self
     public static Peer tryToFindUs(int ourId, List<Peer> config) {
         Peer us = null;
         boolean foundUs = false;
