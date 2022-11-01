@@ -5,16 +5,23 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 public class FileHandler {
 
     //creates file at given path
-    public static boolean createPieceFile(String path, int index){
+    public static boolean createPieceFile(String path, int index, Optional<byte[]> data){
         try{
             //creates a temp file, then sets it to delete on virtual machine termination
-            File.createTempFile(Integer.toString(index),"tmp" ,new File(path))
-                    .deleteOnExit();
-
+            File temp = File.createTempFile(Integer.toString(index),"tmp" ,new File(path));
+            temp.deleteOnExit();
+            if(data.isPresent()){
+                FileWriter wr = new FileWriter(temp);
+                for(byte b : data.get()){
+                    wr.write(b);
+                }
+                wr.close();
+            }
         }
         catch(IOException e){
             System.out.println("failed to create piece");
