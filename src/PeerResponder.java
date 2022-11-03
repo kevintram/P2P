@@ -23,6 +23,7 @@ public class PeerResponder extends PeerTalker implements Runnable {
     public void run() {
         receiveHandshake();
         receiveBitfield();
+        seeIfInterested(conn, peer.id);
 //        waitForMessages();
     }
 

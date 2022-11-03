@@ -3,7 +3,9 @@ import peer.PeerConnection;
 import messages.Handshake;
 import messages.PeerMessage;
 
-import static messages.PeerMessage.Type.BITFIELD;
+import java.util.ArrayList;
+
+import static messages.PeerMessage.Type.*;
 
 /**
  * Deals with talking to peers
@@ -24,7 +26,7 @@ public class PeerTalker {
 
                 sendHandshake(conn, currId);
                 sendBitfield(conn, currId);
-
+                seeIfInterested(conn, currId);
             } catch (Exception ignored){
                 //not sure if we will need to handle this later
             }
@@ -58,6 +60,30 @@ public class PeerTalker {
 
         PeerMessage res = conn.readMessage(State.bitfieldSize);
         State.getPeerById(id).bitField = res.payload;
+    }
+
+    protected void seeIfInterested(PeerConnection conn, int id) {
+        ArrayList<Integer> newPieces = newPiecesFrom(State.getPeerById(id).bitField);
+
+        PeerMessage.Type interest = (newPieces.isEmpty())? NOT_INTERESTED : INTERESTED;
+        conn.sendMessage(new PeerMessage(0, interest, new byte[0]));
+    }
+
+    /**
+     * @param them bitfield of peer we're looking at
+     * @return an arraylist of block indices for new pieces (ones we don't have). It's empty if they have nothing new.
+     */
+    protected ArrayList<Integer> newPiecesFrom(byte[] them){
+        ArrayList<Integer> indices = new ArrayList<>();
+        byte[] us = State.us.bitField;
+
+        for(int i = 0; i < State.bitfieldSize; i++) {
+            if(them[i] == 1 && us[i] == 0){
+                indices.add(i);
+            }
+        }
+
+        return indices;
     }
 
 }
