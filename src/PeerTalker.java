@@ -1,43 +1,66 @@
+import Peer.Peer;
+import Peer.PeerConnection;
 import messages.Handshake;
+import messages.PeerMessage;
+
+import java.util.Arrays;
+
+import static messages.PeerMessage.Type.BITFIELD;
 
 /**
  * Deals with talking to peers
  */
 public class PeerTalker {
-    protected final PeerState state;
+    protected final ProcessState state;
 
-    public PeerTalker(PeerState state) {
+    public PeerTalker(ProcessState state) {
         this.state = state;
     }
 
     public void run() {
         // Connect to peers with id's less than ours
-        int id = state.us.id;
-        //TODO make this not hardcoded
-        while (--id >= 1001) {
+        int currId = state.us.id;
+        while (--currId >= state.startingId) {
             // make a connection
             try {
+                PeerConnection conn = connectTo(currId);
 
-                Peer Peer = state.getPeerById(id);
-                PeerConnection conn = new PeerConnection(Peer.hostName, Peer.port);
-                Peer.connection = conn;
-                System.out.println("Made a connection to " + id);
+                sendHandshake(conn, currId);
+                sendBitfield(conn, currId);
 
-                // send a handshake
-                conn.send(new Handshake(state.us.id).toByteArray());
-
-                // read response
-                byte[] res = new byte[32];
-                conn.read(res, 32);
-
-                // check if response is right
-                if (new Handshake(res).equals(new Handshake(id))) {
-                    System.out.println("Shook hands with " + id);
-                }
             } catch (Exception ignored){
                 //not sure if we will need to handle this later
             }
 
         }
     }
+
+    private PeerConnection connectTo(int id) {
+        Peer Peer = state.getPeerById(id);
+        PeerConnection conn = new PeerConnection(Peer.hostName, Peer.port);
+        Logger.logMakeConnection(state.us.id, id);
+        return conn;
+    }
+
+    private void sendHandshake(PeerConnection conn, int id) {
+        // send a handshake
+        conn.send(new Handshake(state.us.id).toByteArray());
+
+        // read response
+        byte[] res = new byte[32];
+        conn.read(res, 32);
+
+        // check if response is right
+        if (new Handshake(res).equals(new Handshake(id))) {
+            System.out.println("Shook hands with " + id);
+        }
+    }
+
+    private void sendBitfield(PeerConnection conn, int id) {
+        conn.sendMessage(new PeerMessage(state.bitfieldSize, BITFIELD, state.us.bitField));
+
+        PeerMessage res = conn.readMessage(state.bitfieldSize);
+        state.getPeerById(id).bitField = res.payload;
+    }
+
 }

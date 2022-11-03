@@ -1,4 +1,4 @@
-package messages;
+package Peer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -7,13 +7,14 @@ import java.util.ArrayList;
 import static messages.Util.intToByteArr;
 
 /*TODO: Tyler
-*  Compare bitfields, determine which has what you dont
+*  Compare bitfields, determine which has what you don't
 *  update bitfields based on new data
 * */
 
 public class BitField {
     public byte[] bitfield;
     int size;
+
     /*
     returns an arraylist of block indices for pieces you dont have, arraylist is empty if they have nothing new
      */
@@ -27,7 +28,7 @@ public class BitField {
         return indices;
     }
     /*
-    returns an arraylist of what we dont have, we send have for everything we have they dont
+    returns an arraylist of what we don't have, we send have for everything we have they dont
      */
     public static ArrayList<Integer> doesntHave(byte[] bf1, byte[] bf2, int len){
         ArrayList<Integer> indices = new ArrayList<>();

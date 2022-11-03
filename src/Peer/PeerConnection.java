@@ -1,9 +1,12 @@
-import messages.Util;
+package Peer;
+
+import messages.PeerMessage;
 
 import java.io.*;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+
 //TODO set up a thread system so we can download from multiple clients and upload to multiple
 public class PeerConnection {
 
@@ -68,20 +71,29 @@ public class PeerConnection {
         }
     }
 
+    public void sendMessage(PeerMessage msg) {
+        send(msg.toByteArray());
+    }
+
     /**
-     * Reads a message from the connection
+     * Reads from the connection and stores into the buffer
      * @param buf the buffer into which the data is read
      * @param len the length of the message in bytes
      * @return the total number of bytes read into the buffer
      */
     public int read(byte[] buf, int len) {
-
         try {
             return in.read(buf, 0, len);
         } catch (IOException e) {
             e.printStackTrace();
             return -1;
         }
+    }
+
+    public PeerMessage readMessage(int payloadLength) {
+        byte[] buf = new byte[5 + payloadLength];
+        read(buf, 5 + payloadLength);
+        return new PeerMessage(buf);
     }
 
     public final Socket getSocket(){
