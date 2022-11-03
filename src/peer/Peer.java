@@ -1,4 +1,4 @@
-package Peer;
+package peer;
 
 public class Peer {
     public final int id;

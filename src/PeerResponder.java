@@ -1,10 +1,9 @@
-import Peer.Peer;
-import Peer.PeerConnection;
+import peer.Peer;
+import peer.PeerConnection;
 import messages.Handshake;
 import messages.PeerMessage;
 
 import java.net.Socket;
-import java.util.Arrays;
 
 import static messages.PeerMessage.Type.BITFIELD;
 
@@ -16,8 +15,7 @@ public class PeerResponder extends PeerTalker implements Runnable {
     private Peer peer;
     private final PeerConnection conn;
 
-    public PeerResponder(Socket socket, ProcessState state)  {
-        super(state);
+    public PeerResponder(Socket socket)  {
         conn = new PeerConnection(socket);
     }
 
@@ -34,21 +32,21 @@ public class PeerResponder extends PeerTalker implements Runnable {
         conn.read(buf, 32);
         Handshake handshake = new Handshake(buf);
 
-        peer = state.getPeerById(handshake.id);
+        peer = State.getPeerById(handshake.id);
         peer.connection = conn;
 
         // send back handshake
-        conn.send(new Handshake(state.us.id).toByteArray());
-        Logger.logConnectionEstablished(state.us.id, peer.id);
+        conn.send(new Handshake(State.us.id).toByteArray());
+        Logger.logConnectionEstablished(State.us.id, peer.id);
     }
 
     private void receiveBitfield() {
         // read bitfield
-        PeerMessage res = conn.readMessage(state.bitfieldSize);
-        state.getPeerById(peer.id).bitField = res.payload;
+        PeerMessage res = conn.readMessage(State.bitfieldSize);
+        State.getPeerById(peer.id).bitField = res.payload;
 
         // send our bitfield
-        conn.sendMessage(new PeerMessage(state.bitfieldSize, BITFIELD, state.us.bitField));
+        conn.sendMessage(new PeerMessage(State.bitfieldSize, BITFIELD, State.us.bitField));
         System.out.println("Exchanged bitfields with " + peer.id);
     }
 

@@ -1,10 +1,6 @@
-package Peer;
+package peer;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
-
-import static messages.Util.intToByteArr;
 
 /*TODO: Tyler
 *  Compare bitfields, determine which has what you don't

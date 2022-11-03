@@ -1,4 +1,4 @@
-package Peer;
+package peer;
 
 import messages.PeerMessage;
 

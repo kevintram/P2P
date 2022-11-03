@@ -1,4 +1,4 @@
-import Peer.Peer;
+import peer.Peer;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -10,21 +10,19 @@ public class P2P {
     public static void main(String[] args) throws IOException {
         int id = Integer.parseInt(args[0]);
 
-        ProcessState state = new ProcessState();
+        State.path = "peer_" + id + File.separator;
 
-        state.path = "peer_" + id + File.separator;
+        parsePeerInfoFile(id);
+        parseCommonCfg();
 
-        parsePeerInfoFile(state, id);
-        parseCommonCfg(state);
-
-        makePieces(state);
+        makePieces();
 
         //TODO make these run as separate threads
-        startTalking(state);
-        waitForPeersToTalkToMe(state);
+        startTalking();
+        waitForPeersToTalkToMe();
     }
 
-    private static void parsePeerInfoFile(ProcessState state, int ourId) throws IOException {
+    private static void parsePeerInfoFile(int ourId) throws IOException {
         ArrayList<Peer> peers = new ArrayList<Peer>();
 
         File file = new File("PeerInfo.cfg");
@@ -41,14 +39,14 @@ public class P2P {
             peers.add(new Peer(id, hostName , port, hasFile));
         }
 
-        state.startingId = peers.get(0).id;
+        State.startingId = peers.get(0).id;
 
-        state.setPeers(peers);
+        State.setPeers(peers);
 
         boolean foundUs = false;
         for (Peer p : peers) {
             if (p.id == ourId) {
-                state.us = p;
+                State.us = p;
                 foundUs = true;
                 break;
             }
@@ -59,54 +57,54 @@ public class P2P {
         }
     }
 
-    private static void parseCommonCfg(ProcessState state) throws IOException {
+    private static void parseCommonCfg() throws IOException {
         File file = new File("Common.cfg");
         BufferedReader br = new BufferedReader(new FileReader(file));
         String ss[];
 
         ss = br.readLine().split(" ");
-        state.numPrefNeighbors = Integer.parseInt(ss[1]);
+        State.numPrefNeighbors = Integer.parseInt(ss[1]);
 
         ss = br.readLine().split(" ");
-        state.unchokeInterval = Integer.parseInt(ss[1]);
+        State.unchokeInterval = Integer.parseInt(ss[1]);
 
         ss = br.readLine().split(" ");
-        state.optimisticInterval = Integer.parseInt(ss[1]);
+        State.optimisticInterval = Integer.parseInt(ss[1]);
 
         ss = br.readLine().split(" ");
-        state.fileName = ss[1];
+        State.fileName = ss[1];
 
         ss = br.readLine().split(" ");
-        state.fileSize = Integer.parseInt(ss[1]);
+        State.fileSize = Integer.parseInt(ss[1]);
 
         ss = br.readLine().split(" ");
-        state.pieceSize = Integer.parseInt(ss[1]);
+        State.pieceSize = Integer.parseInt(ss[1]);
 
-        state.numPieces = state.fileSize / state.pieceSize;
-        state.bitfieldPaddingSize = (8 - (state.numPieces % 8));
-        state.bitfieldSize = state.numPieces + state.bitfieldPaddingSize;
+        State.numPieces = State.fileSize / State.pieceSize;
+        State.bitfieldPaddingSize = (8 - (State.numPieces % 8));
+        State.bitfieldSize = State.numPieces + State.bitfieldPaddingSize;
 
         // set our bitfield
-        byte[] bitField = new byte[state.bitfieldSize];
+        byte[] bitField = new byte[State.bitfieldSize];
         // fills array with 1's if it has file
-        if (state.us.hasFile) {
+        if (State.us.hasFile) {
             Arrays.fill(bitField, Integer.valueOf(1).byteValue());
             // padded bits need to be 0 always
-            for (int i = 0; i <= state.bitfieldPaddingSize; i++) {
-                bitField[state.numPieces + i - 1] = 0;
+            for (int i = 0; i <= State.bitfieldPaddingSize; i++) {
+                bitField[State.numPieces + i - 1] = 0;
             }
         } else {
             Arrays.fill(bitField, Integer.valueOf(0).byteValue());
         }
 
-        state.us.bitField = bitField;
+        State.us.bitField = bitField;
     }
 
-    public static void makePieces(ProcessState state) throws IOException {
-        String path = state.path;
-        String fileName = state.fileName;
-        Peer us = state.us;
-        int numPieces = state.numPieces;
+    public static void makePieces() throws IOException {
+        String path = State.path;
+        String fileName = State.fileName;
+        Peer us = State.us;
+        int numPieces = State.numPieces;
 
         for(int i = 0; i < numPieces; i++) {
             PieceFileHelper.createPieceFile(path, i);
@@ -139,13 +137,13 @@ public class P2P {
         }));
     }
 
-    public static void waitForPeersToTalkToMe(ProcessState state) {
+    public static void waitForPeersToTalkToMe() {
         try {
-            ServerSocket server = new ServerSocket(state.us.port);
+            ServerSocket server = new ServerSocket(State.us.port);
             try {
                 // when a peer tries to connect to us, run a PeerResponder
                 while (true) {
-                    new PeerResponder(server.accept(), state).run();
+                    new PeerResponder(server.accept()).run();
                 }
             } finally {
                 server.close();
@@ -155,7 +153,7 @@ public class P2P {
         }
     }
 
-    public static void startTalking(ProcessState state) {
-        new PeerTalker(state).run();
+    public static void startTalking() {
+        new PeerTalker().run();
     }
 }

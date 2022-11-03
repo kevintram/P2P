@@ -1,9 +1,7 @@
-import Peer.Peer;
-import Peer.PeerConnection;
+import peer.Peer;
+import peer.PeerConnection;
 import messages.Handshake;
 import messages.PeerMessage;
-
-import java.util.Arrays;
 
 import static messages.PeerMessage.Type.BITFIELD;
 
@@ -11,16 +9,15 @@ import static messages.PeerMessage.Type.BITFIELD;
  * Deals with talking to peers
  */
 public class PeerTalker {
-    protected final ProcessState state;
 
-    public PeerTalker(ProcessState state) {
-        this.state = state;
+    public PeerTalker() {
+
     }
 
     public void run() {
         // Connect to peers with id's less than ours
-        int currId = state.us.id;
-        while (--currId >= state.startingId) {
+        int currId = State.us.id;
+        while (--currId >= State.startingId) {
             // make a connection
             try {
                 PeerConnection conn = connectTo(currId);
@@ -36,15 +33,15 @@ public class PeerTalker {
     }
 
     private PeerConnection connectTo(int id) {
-        Peer Peer = state.getPeerById(id);
+        Peer Peer = State.getPeerById(id);
         PeerConnection conn = new PeerConnection(Peer.hostName, Peer.port);
-        Logger.logMakeConnection(state.us.id, id);
+        Logger.logMakeConnection(State.us.id, id);
         return conn;
     }
 
     private void sendHandshake(PeerConnection conn, int id) {
         // send a handshake
-        conn.send(new Handshake(state.us.id).toByteArray());
+        conn.send(new Handshake(State.us.id).toByteArray());
 
         // read response
         byte[] res = new byte[32];
@@ -57,10 +54,10 @@ public class PeerTalker {
     }
 
     private void sendBitfield(PeerConnection conn, int id) {
-        conn.sendMessage(new PeerMessage(state.bitfieldSize, BITFIELD, state.us.bitField));
+        conn.sendMessage(new PeerMessage(State.bitfieldSize, BITFIELD, State.us.bitField));
 
-        PeerMessage res = conn.readMessage(state.bitfieldSize);
-        state.getPeerById(id).bitField = res.payload;
+        PeerMessage res = conn.readMessage(State.bitfieldSize);
+        State.getPeerById(id).bitField = res.payload;
     }
 
 }
