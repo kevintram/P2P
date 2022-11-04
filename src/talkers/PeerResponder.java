@@ -10,9 +10,8 @@ import java.net.Socket;
 import static messages.PeerMessage.Type.BITFIELD;
 
 /**
- * Reads and responds to a peer's messages
+ * The one who accepts and responds to handshakes
  */
-// TODO: idk if this should extend PeerProcess but I feel like they would have a lot of overlap in functionality
 public class PeerResponder extends PeerTalker implements Runnable {
     private Neighbor neighbor;
     private final PeerConnection conn;
@@ -25,8 +24,8 @@ public class PeerResponder extends PeerTalker implements Runnable {
     public void run() {
         receiveHandshake();
         receiveBitfield();
-        seeIfInterested(conn, neighbor.id);
-//        waitForMessages();
+        seeIfInterested(neighbor);
+        waitForMessages(neighbor);
     }
 
     private void receiveHandshake() {
@@ -51,38 +50,6 @@ public class PeerResponder extends PeerTalker implements Runnable {
         // send our bitfield
         conn.sendMessage(new PeerMessage(State.bitfieldSize, BITFIELD, State.us.bitField));
         System.out.println("Exchanged bitfields with " + neighbor.id);
-    }
-
-    private void waitForMessages() {
-        // runs a loop check for if it receives a message, when it does so it will respond accordingly
-        while (conn.getSocket().isConnected()) {
-            PeerMessage msg = conn.readMessage();
-            switch (msg.type){
-                case CHOKE:
-                    Logger.logChoke(State.us.id, neighbor.id);
-                    break;
-                case UNCHOKE:
-                    Logger.logUnchoke(State.us.id, neighbor.id);
-                    break;
-                case INTERESTED:
-                    Logger.logInterest(State.us.id, neighbor.id);
-                    break;
-                case NOT_INTERESTED:
-                    Logger.logNotInterest(State.us.id, neighbor.id);
-                    break;
-                case HAVE:
-                    Logger.logHave(State.us.id, neighbor.id);
-                    break;
-                case BITFIELD:
-                    break;
-                case REQUEST:
-                    break;
-                case PIECE:
-                    break;
-                default:
-                    throw new RuntimeException("Invalid Message Type");
-            }
-        }
     }
 
 }

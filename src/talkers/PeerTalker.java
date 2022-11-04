@@ -1,5 +1,6 @@
 package talkers;
 
+import peer.Neighbor;
 import peer.Peer;
 import peer.PeerConnection;
 import messages.Handshake;
@@ -10,7 +11,7 @@ import java.util.ArrayList;
 import static messages.PeerMessage.Type.*;
 
 /**
- * Deals with talking to peers
+ * The one who reaches out for handshakes
  */
 public class PeerTalker {
 
@@ -24,11 +25,16 @@ public class PeerTalker {
         while (--currId >= State.startingId) {
             // make a connection
             try {
-                PeerConnection conn = connectTo(currId);
+                Neighbor neighbor = State.getNeighborById(currId);
 
-                sendHandshake(conn, currId);
-                sendBitfield(conn, currId);
-                seeIfInterested(conn, currId);
+                neighbor.connection = new PeerConnection(neighbor.hostName, neighbor.port);
+                Logger.logMakeConnection(State.us.id, currId);
+
+                sendHandshake(neighbor);
+                sendBitfield(neighbor);
+                seeIfInterested(neighbor);
+
+                (new Thread(() -> waitForMessages(neighbor))).start();
             } catch (Exception ignored){
                 //not sure if we will need to handle this later
             }
@@ -36,14 +42,9 @@ public class PeerTalker {
         }
     }
 
-    private PeerConnection connectTo(int id) {
-        Peer Peer = State.getNeighborById(id);
-        PeerConnection conn = new PeerConnection(Peer.hostName, Peer.port);
-        Logger.logMakeConnection(State.us.id, id);
-        return conn;
-    }
+    private void sendHandshake(Neighbor neighbor) {
+        PeerConnection conn = neighbor.connection;
 
-    private void sendHandshake(PeerConnection conn, int id) {
         // send a handshake
         conn.send(new Handshake(State.us.id).toByteArray());
 
@@ -52,23 +53,26 @@ public class PeerTalker {
         conn.read(res, 32);
 
         // check if response is right
-        if (new Handshake(res).equals(new Handshake(id))) {
-            System.out.println("Shook hands with " + id);
+        if (new Handshake(res).equals(new Handshake(neighbor.id))) {
+            System.out.println("Shook hands with " + neighbor.id);
         }
     }
 
-    private void sendBitfield(PeerConnection conn, int id) {
+    private void sendBitfield(Neighbor neighbor) {
+        PeerConnection conn = neighbor.connection;
+
         conn.sendMessage(new PeerMessage(State.bitfieldSize, BITFIELD, State.us.bitField));
 
         PeerMessage res = conn.readMessage();
-        State.getNeighborById(id).bitField = res.payload;
+        State.getNeighborById(neighbor.id).bitField = res.payload;
     }
 
-    protected void seeIfInterested(PeerConnection conn, int id) {
-        ArrayList<Integer> newPieces = newPiecesFrom(State.getNeighborById(id).bitField);
+    protected void seeIfInterested(Neighbor neighbor) {
+
+        ArrayList<Integer> newPieces = newPiecesFrom(neighbor.bitField);
 
         PeerMessage.Type interest = (newPieces.isEmpty())? NOT_INTERESTED : INTERESTED;
-        conn.sendMessage(new PeerMessage(0, interest, new byte[0]));
+        neighbor.connection.sendMessage(new PeerMessage(0, interest, new byte[0]));
     }
 
     /**
@@ -86,6 +90,46 @@ public class PeerTalker {
         }
 
         return indices;
+    }
+
+    protected void waitForMessages(Neighbor neighbor) {
+        PeerConnection conn = neighbor.connection;
+        // runs a loop check for if it receives a message, when it does so it will respond accordingly
+        while (conn.getSocket().isConnected()) {
+            PeerMessage msg = conn.readMessage();
+            switch (msg.type){
+                case CHOKE:
+                    Logger.logChoke(State.us.id, neighbor.id);
+                    break;
+                case UNCHOKE:
+                    Logger.logUnchoke(State.us.id, neighbor.id);
+                    break;
+                case INTERESTED:
+                    Logger.logInterest(State.us.id, neighbor.id);
+                    break;
+                case NOT_INTERESTED:
+                    Logger.logNotInterest(State.us.id, neighbor.id);
+                    break;
+                case HAVE:
+                    Logger.logHave(State.us.id, neighbor.id);
+                    // mark it down
+                    break;
+                case BITFIELD:
+                    break;
+                case REQUEST:
+                    // check if they're choked/unchoked
+                    // send a piece if they're unchoked
+                    break;
+                case PIECE:
+                    // write the piece down
+                    // send haves
+                    // send not interested's
+                    // send another request if still interested
+                    break;
+                default:
+                    throw new RuntimeException("Invalid Message Type");
+            }
+        }
     }
 
 }

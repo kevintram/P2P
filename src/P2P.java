@@ -145,7 +145,7 @@ public class P2P {
             try {
                 // when a peer tries to connect to us, run a talkers.PeerResponder
                 while (true) {
-                    new PeerResponder(server.accept()).run();
+                    new Thread(new PeerResponder(server.accept())).start();
                 }
             } finally {
                 server.close();
