@@ -1,3 +1,5 @@
+package talkers;
+
 import peer.Peer;
 import peer.PeerConnection;
 import messages.Handshake;
@@ -43,7 +45,7 @@ public class PeerResponder extends PeerTalker implements Runnable {
 
     private void receiveBitfield() {
         // read bitfield
-        PeerMessage res = conn.readMessage(State.bitfieldSize);
+        PeerMessage res = conn.readMessage();
         State.getPeerById(peer.id).bitField = res.payload;
 
         // send our bitfield
@@ -51,39 +53,36 @@ public class PeerResponder extends PeerTalker implements Runnable {
         System.out.println("Exchanged bitfields with " + peer.id);
     }
 
-//    private void waitForMessages() {
-//        //runs a loop check for if it receives a message, when it does so it will respond accordingly
-//        while (conn.getSocket().isConnected()) {
-//            //set for getting message length
-//            byte[] buf = new byte[4];
-//            conn.read(buf, 4);
-//            int size = Util.byteArrToInt(buf);
-//            //buffer is now size to read message, plus one byte to get message type
-//            buf = new byte[size + 1];
-//            //gets message type
-//            conn.read(buf, 1);
-//            int type = Util.byteArrToInt(buf);
-//            switch (type){
-//                case 0:
-//                    break;
-//                case 1:
-//                    break;
-//                case 2:
-//                    break;
-//                case 3:
-//                    break;
-//                case 4:
-//                    break;
-//                case 5:
-//                    break;
-//                case 6:
-//                    break;
-//                case 7:
-//                    break;
-//                default:
-//                    throw new RuntimeException("Invalid Message Type");
-//            }
-//        }
-//    }
+    private void waitForMessages() {
+        // runs a loop check for if it receives a message, when it does so it will respond accordingly
+        while (conn.getSocket().isConnected()) {
+            PeerMessage msg = conn.readMessage();
+            switch (msg.type){
+                case CHOKE:
+                    Logger.logChoke(State.us.id, peer.id);
+                    break;
+                case UNCHOKE:
+                    Logger.logUnchoke(State.us.id, peer.id);
+                    break;
+                case INTERESTED:
+                    Logger.logInterest(State.us.id, peer.id);
+                    break;
+                case NOT_INTERESTED:
+                    Logger.logNotInterest(State.us.id, peer.id);
+                    break;
+                case HAVE:
+                    Logger.logHave(State.us.id, peer.id);
+                    break;
+                case BITFIELD:
+                    break;
+                case REQUEST:
+                    break;
+                case PIECE:
+                    break;
+                default:
+                    throw new RuntimeException("Invalid Message Type");
+            }
+        }
+    }
 
 }

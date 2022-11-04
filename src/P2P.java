@@ -1,4 +1,8 @@
 import peer.Peer;
+import talkers.PeerResponder;
+import talkers.PeerTalker;
+import talkers.PieceFileHelper;
+import talkers.State;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -140,7 +144,7 @@ public class P2P {
         try {
             ServerSocket server = new ServerSocket(State.us.port);
             try {
-                // when a peer tries to connect to us, run a PeerResponder
+                // when a peer tries to connect to us, run a talkers.PeerResponder
                 while (true) {
                     new PeerResponder(server.accept()).run();
                 }

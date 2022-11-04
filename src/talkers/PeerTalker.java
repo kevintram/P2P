@@ -1,3 +1,5 @@
+package talkers;
+
 import peer.Peer;
 import peer.PeerConnection;
 import messages.Handshake;
@@ -58,7 +60,7 @@ public class PeerTalker {
     private void sendBitfield(PeerConnection conn, int id) {
         conn.sendMessage(new PeerMessage(State.bitfieldSize, BITFIELD, State.us.bitField));
 
-        PeerMessage res = conn.readMessage(State.bitfieldSize);
+        PeerMessage res = conn.readMessage();
         State.getPeerById(id).bitField = res.payload;
     }
 

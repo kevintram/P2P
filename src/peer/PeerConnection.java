@@ -1,6 +1,7 @@
 package peer;
 
 import messages.PeerMessage;
+import messages.Util;
 
 import java.io.*;
 import java.net.ConnectException;
@@ -90,10 +91,20 @@ public class PeerConnection {
         }
     }
 
-    public PeerMessage readMessage(int payloadLength) {
-        byte[] buf = new byte[5 + payloadLength];
-        read(buf, 5 + payloadLength);
-        return new PeerMessage(buf);
+    public PeerMessage readMessage() {
+        // get payload length
+        byte[] lenBuf = new byte[4];
+        read(lenBuf, 4);
+        int len = Util.byteArrToInt(lenBuf);
+        // get type
+        byte[] typeBuf = new byte[1];
+        read(typeBuf, 1);
+        PeerMessage.Type type = PeerMessage.Type.values()[typeBuf[0]];
+        // get payload
+        byte[] payload = new byte[len];
+        read(payload, len);
+
+        return new PeerMessage(len, type, payload);
     }
 
     public final Socket getSocket(){
