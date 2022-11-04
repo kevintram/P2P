@@ -34,6 +34,7 @@ public class PieceFileHelper {
 
     }
 
+    // returns the entire piece as a byte array
     public static byte[] getByteArrOfPiece(String path, int index) {
         try {
             return Files.readAllBytes(new File(path + index + ".tmp").toPath());
@@ -44,7 +45,7 @@ public class PieceFileHelper {
 
     /**
      * @param pieceCnt number of pieces
-     * @param finalFile file name of the final file to downlaod
+     * @param finalFile file name of the final file to download
      * @param path path to the temp files and where final file will go
      * @return returns true if it worked
      */
@@ -52,7 +53,7 @@ public class PieceFileHelper {
         try {
             FileWriter file = new FileWriter(path + File.separator + finalFile, true);
             for(int i = 1; i <= pieceCnt; i++){
-                byte[] temp = Files.readAllBytes(Paths.get(path + File.separator + (i - 1) + ".tmp"));
+                byte[] temp = getByteArrOfPiece(path, i - 1);
                 for (byte b : temp) {
                     file.write(b);
                 }

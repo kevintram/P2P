@@ -9,6 +9,7 @@ import messages.PeerMessage;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Random;
 
 import static messages.PeerMessage.Type.*;
 
@@ -71,22 +72,21 @@ public class PeerTalker {
 
     protected void seeIfInterested(Neighbor neighbor) {
 
-        int indexOfFirstNew = indexOfFirstNew(neighbor.bitField);
-
-        PeerMessage.Type interest = (indexOfFirstNew == -1)? NOT_INTERESTED : INTERESTED;
+        PeerMessage.Type interest = (hasSomethingNew(neighbor.bitField))? INTERESTED: NOT_INTERESTED;
         neighbor.connection.sendMessage(new PeerMessage(0, interest, new byte[0]));
 
         if (interest == INTERESTED) {
-            System.out.println("Requesting for " + indexOfFirstNew);
-            neighbor.connection.sendMessage(new PeerMessage(4, REQUEST, Util.intToByteArr(indexOfFirstNew)));
+            int i = randomPieceFrom(neighbor.bitField);
+            System.out.println("Requesting for " + i);
+            neighbor.connection.sendMessage(new PeerMessage(4, REQUEST, Util.intToByteArr(i)));
         }
     }
 
     /**
      * @param them bitfield of peer we're looking at
-     * @return an arraylist of block indices for new pieces (ones we don't have). It's empty if they have nothing new.
+     * @return the index of a random new piece (one that we don't have). Returns -1 if they have nothing new.
      */
-    protected ArrayList<Integer> newPiecesFrom(byte[] them){
+    protected int randomPieceFrom(byte[] them){
         ArrayList<Integer> indices = new ArrayList<>();
         byte[] us = State.us.bitField;
 
@@ -96,23 +96,28 @@ public class PeerTalker {
             }
         }
 
-        return indices;
+        if (indices.isEmpty()) {
+            return -1;
+        } else {
+            Random random = new Random();
+            return indices.get(random.nextInt(indices.size()));
+        }
     }
 
     /**
      * @param them bitfield of peer we're looking at
-     * @return the index of the first new piece (one that we don't have). Returns -1 if they have nothing new.
+     * @return returns true if they have something new. Returns false if they don't.
      */
-    protected int indexOfFirstNew(byte[] them) {
+    protected boolean hasSomethingNew(byte[] them) {
         byte[] us = State.us.bitField;
 
         for (int i = 0; i < State.bitfieldSize; i++) {
             if(them[i] == 1 && us[i] == 0){
-                return i;
+                return true;
             }
         }
 
-        return -1;
+        return false;
     }
 
     protected void waitForMessages(Neighbor neighbor) {
@@ -165,16 +170,16 @@ public class PeerTalker {
 
                     Logger.logDownload(State.us.id, neighbor.id, index);
 
-//                    // send haves and not interesteds
+                    // TODO: send haves and not-interesteds
 //                    for (Neighbor n : State.getNeighbors()) {
 //                        n.connection.sendMessage(new PeerMessage(4, HAVE, Util.intToByteArr(index)));
 //                    }
 
                     // send another request if still interested
                     byte[] us = State.us.bitField;
-                    int indexOfFirstNew = indexOfFirstNew(neighbor.bitField);
-                    if (indexOfFirstNew != -1) {
-                        neighbor.connection.sendMessage(new PeerMessage(4, REQUEST, Util.intToByteArr(indexOfFirstNew)));
+                    if (hasSomethingNew(neighbor.bitField)) {
+                        int i = randomPieceFrom(neighbor.bitField);
+                        neighbor.connection.sendMessage(new PeerMessage(4, REQUEST, Util.intToByteArr(i)));
                     }
                     break;
                 default:
