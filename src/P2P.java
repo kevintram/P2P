@@ -23,8 +23,9 @@ public class P2P {
     }
 
     private static void parsePeerInfoFile(int ourId) throws IOException {
-        ArrayList<Peer> peers = new ArrayList<Peer>();
+        ArrayList<Peer> peers = new ArrayList<>();
 
+        boolean foundUs = false;
         File file = new File("PeerInfo.cfg");
         BufferedReader br = new BufferedReader(new FileReader(file));
         String lineBuf;
@@ -36,25 +37,23 @@ public class P2P {
             int port = Integer.parseInt(lineSplit[2]);
             boolean hasFile = Integer.parseInt(lineSplit[3]) == 1;
 
-            peers.add(new Peer(id, hostName , port, hasFile));
+            Peer peer = new Peer(id, hostName , port, hasFile);
+
+            if (id == ourId) {
+                State.us = peer;
+                foundUs = true;
+            } else {
+                peers.add(peer);
+            }
         }
 
         State.startingId = peers.get(0).id;
 
-        State.setPeers(peers);
-
-        boolean foundUs = false;
-        for (Peer p : peers) {
-            if (p.id == ourId) {
-                State.us = p;
-                foundUs = true;
-                break;
-            }
-        }
-
         if (!foundUs) {
             throw new RuntimeException("Error: Could not find given id in PeerInfo.cfg!");
         }
+
+        State.setPeers(peers);
     }
 
     private static void parseCommonCfg() throws IOException {
