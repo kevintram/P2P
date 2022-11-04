@@ -1,5 +1,6 @@
 package talkers;
 
+import messages.Util;
 import peer.Neighbor;
 import peer.Peer;
 import peer.PeerConnection;
@@ -7,6 +8,7 @@ import messages.Handshake;
 import messages.PeerMessage;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import static messages.PeerMessage.Type.*;
 
@@ -69,10 +71,15 @@ public class PeerTalker {
 
     protected void seeIfInterested(Neighbor neighbor) {
 
-        ArrayList<Integer> newPieces = newPiecesFrom(neighbor.bitField);
+        int indexOfFirstNew = indexOfFirstNew(neighbor.bitField);
 
-        PeerMessage.Type interest = (newPieces.isEmpty())? NOT_INTERESTED : INTERESTED;
+        PeerMessage.Type interest = (indexOfFirstNew == -1)? NOT_INTERESTED : INTERESTED;
         neighbor.connection.sendMessage(new PeerMessage(0, interest, new byte[0]));
+
+        if (interest == INTERESTED) {
+            System.out.println("Requesting for " + indexOfFirstNew);
+            neighbor.connection.sendMessage(new PeerMessage(4, REQUEST, Util.intToByteArr(indexOfFirstNew)));
+        }
     }
 
     /**
@@ -90,6 +97,22 @@ public class PeerTalker {
         }
 
         return indices;
+    }
+
+    /**
+     * @param them bitfield of peer we're looking at
+     * @return the index of the first new piece (one that we don't have). Returns -1 if they have nothing new.
+     */
+    protected int indexOfFirstNew(byte[] them) {
+        byte[] us = State.us.bitField;
+
+        for (int i = 0; i < State.bitfieldSize; i++) {
+            if(them[i] == 1 && us[i] == 0){
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     protected void waitForMessages(Neighbor neighbor) {
@@ -117,14 +140,44 @@ public class PeerTalker {
                 case BITFIELD:
                     break;
                 case REQUEST:
-                    // check if they're choked/unchoked
-                    // send a piece if they're unchoked
+                    // for now, just gonna pretend nobody is choked
+                    int pieceIndex = Util.byteArrToInt(msg.payload);
+                    System.out.println("Got request for " + pieceIndex);
+
+                    byte[] piece = PieceFileHelper.getByteArrOfPiece(State.path, pieceIndex);
+
+                    int payloadLen = 4 + piece.length;
+                    byte[] payload = new byte[payloadLen];
+                    System.arraycopy(msg.payload, 0, payload, 0, 4); // write index into payload
+                    System.arraycopy(piece, 0, payload, 4, piece.length); // write piece into payload
+
+                    neighbor.connection.sendMessage(new PeerMessage(payloadLen, PIECE, payload));
                     break;
                 case PIECE:
                     // write the piece down
-                    // send haves
-                    // send not interested's
+                    byte[] indexBuf = Arrays.copyOfRange(msg.payload, 0, 4);
+                    int index = Util.byteArrToInt(indexBuf);
+
+                    byte[] pieceContent = Arrays.copyOfRange(msg.payload, 4, msg.len);
+
+                    PieceFileHelper.updatePieceFile(State.path, index, pieceContent);
+                    State.us.bitField[index] = 1;
+
+                    Logger.logDownload(State.us.id, neighbor.id, index);
+
+//                    // send haves and not interesteds
+//                    for (Neighbor n : State.getNeighbors()) {
+//                        n.connection.sendMessage(new PeerMessage(4, HAVE, Util.intToByteArr(index)));
+//                    }
+
                     // send another request if still interested
+                    byte[] us = State.us.bitField;
+                    int indexOfFirstNew = indexOfFirstNew(neighbor.bitField);
+                    if (indexOfFirstNew != -1) {
+                        neighbor.connection.sendMessage(new PeerMessage(4, REQUEST, Util.intToByteArr(indexOfFirstNew)));
+                    } else {
+                        System.out.println("");
+                    }
                     break;
                 default:
                     throw new RuntimeException("Invalid Message Type");

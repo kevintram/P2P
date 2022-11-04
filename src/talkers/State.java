@@ -40,4 +40,8 @@ public class State {
     public static Neighbor getNeighborById(int id) {
         return idToNeighbor.get(id);
     }
+
+    public static Collection<Neighbor> getNeighbors() {
+        return idToNeighbor.values();
+    }
 }

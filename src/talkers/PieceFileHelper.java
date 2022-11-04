@@ -1,10 +1,9 @@
 package talkers;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Optional;
 
 public class PieceFileHelper {
@@ -35,18 +34,31 @@ public class PieceFileHelper {
 
     }
 
+    public static byte[] getByteArrOfPiece(String path, int index) {
+        try {
+            return Files.readAllBytes(new File(path + index + ".tmp").toPath());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * @param pieceCnt number of pieces
      * @param finalFile file name of the final file to downlaod
      * @param path path to the temp files and where final file will go
      * @return returns true if it worked
      */
-    public static boolean combine(int pieceCnt, String finalFile, String path){
-        try{
-            FileWriter file = new FileWriter(finalFile);
-            for(int i = 0; i < pieceCnt; i++){
-                byte[] temp = Files.readAllBytes(Paths.get(path + File.separator + i + ".tmp"));
+    public static boolean combine(int pieceCnt, String finalFile, String path) {
+        System.out.println("TRYING TO COMBINE");
+        try {
+            FileWriter file = new FileWriter(path + File.separator + finalFile, true);
+            for(int i = 1; i <= pieceCnt; i++){
+                byte[] temp = Files.readAllBytes(Paths.get(path + File.separator + (i - 1) + ".tmp"));
+                for (byte b : temp) {
+                    file.write(b);
+                }
             }
+            file.close();
         } catch (IOException e){
             System.out.println("Failed to combine file");
             return false;

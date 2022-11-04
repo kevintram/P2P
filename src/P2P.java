@@ -92,8 +92,8 @@ public class P2P {
         if (State.us.hasFile) {
             Arrays.fill(bitField, Integer.valueOf(1).byteValue());
             // padded bits need to be 0 always
-            for (int i = 0; i <= State.bitfieldPaddingSize; i++) {
-                bitField[State.numPieces + i - 1] = 0;
+            for (int i = 0; i < State.bitfieldPaddingSize; i++) {
+                bitField[State.numPieces + i] = 0;
             }
         } else {
             Arrays.fill(bitField, Integer.valueOf(0).byteValue());
@@ -127,8 +127,8 @@ public class P2P {
         // adds a shutdown hook, so on client termination, temp files will combine if the file is complete
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             boolean complete = true;
-            for (byte b : us.bitField){
-                if(b == 0){
+            for (int i = 1; i <= numPieces; i++){
+                if(us.bitField[i - 1] == 0){
                     complete = false;
                     break;
                 }
