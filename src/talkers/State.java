@@ -1,5 +1,6 @@
 package talkers;
 
+import peer.Neighbor;
 import peer.Peer;
 
 import java.util.*;
@@ -9,8 +10,8 @@ import java.util.*;
  * THIS SHOULD HAVE LIKE NO FUNCTIONALITY IT JUST HOLDS SHIT
  */
 public class State {
-    private static final HashMap<Integer, Peer> idToPeer = new HashMap<>();
-    public static final ArrayList<Peer> unchoked = new ArrayList<>();
+    private static final HashMap<Integer, Neighbor> idToNeighbor = new HashMap<>();
+    public static final ArrayList<Neighbor> unchoked = new ArrayList<>();
 
     public static Peer us;
 
@@ -30,13 +31,13 @@ public class State {
 
     public static String path;
 
-    public static void setPeers(List<Peer> peers) {
-        for (Peer p: peers) {
-            idToPeer.put(p.id, p);
+    public static void setNeighbors(List<Neighbor> peers) {
+        for (Neighbor p: peers) {
+            idToNeighbor.put(p.id, p);
         }
     }
 
-    public static Peer getPeerById(int id) {
-        return idToPeer.get(id);
+    public static Neighbor getNeighborById(int id) {
+        return idToNeighbor.get(id);
     }
 }

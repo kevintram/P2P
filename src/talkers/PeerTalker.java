@@ -37,7 +37,7 @@ public class PeerTalker {
     }
 
     private PeerConnection connectTo(int id) {
-        Peer Peer = State.getPeerById(id);
+        Peer Peer = State.getNeighborById(id);
         PeerConnection conn = new PeerConnection(Peer.hostName, Peer.port);
         Logger.logMakeConnection(State.us.id, id);
         return conn;
@@ -61,11 +61,11 @@ public class PeerTalker {
         conn.sendMessage(new PeerMessage(State.bitfieldSize, BITFIELD, State.us.bitField));
 
         PeerMessage res = conn.readMessage();
-        State.getPeerById(id).bitField = res.payload;
+        State.getNeighborById(id).bitField = res.payload;
     }
 
     protected void seeIfInterested(PeerConnection conn, int id) {
-        ArrayList<Integer> newPieces = newPiecesFrom(State.getPeerById(id).bitField);
+        ArrayList<Integer> newPieces = newPiecesFrom(State.getNeighborById(id).bitField);
 
         PeerMessage.Type interest = (newPieces.isEmpty())? NOT_INTERESTED : INTERESTED;
         conn.sendMessage(new PeerMessage(0, interest, new byte[0]));

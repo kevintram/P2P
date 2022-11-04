@@ -1,3 +1,4 @@
+import peer.Neighbor;
 import peer.Peer;
 import talkers.PeerResponder;
 import talkers.PeerTalker;
@@ -27,7 +28,7 @@ public class P2P {
     }
 
     private static void parsePeerInfoFile(int ourId) throws IOException {
-        ArrayList<Peer> peers = new ArrayList<>();
+        ArrayList<Neighbor> neighbors = new ArrayList<>();
 
         boolean foundUs = false;
         File file = new File("PeerInfo.cfg");
@@ -41,23 +42,21 @@ public class P2P {
             int port = Integer.parseInt(lineSplit[2]);
             boolean hasFile = Integer.parseInt(lineSplit[3]) == 1;
 
-            Peer peer = new Peer(id, hostName , port, hasFile);
-
             if (id == ourId) {
-                State.us = peer;
+                State.us = new Peer(id, hostName , port, hasFile);
                 foundUs = true;
             } else {
-                peers.add(peer);
+                neighbors.add(new Neighbor(id, hostName, port, hasFile));
             }
         }
 
-        State.startingId = peers.get(0).id;
+        State.startingId = neighbors.get(0).id;
 
         if (!foundUs) {
             throw new RuntimeException("Error: Could not find given id in PeerInfo.cfg!");
         }
 
-        State.setPeers(peers);
+        State.setNeighbors(neighbors);
     }
 
     private static void parseCommonCfg() throws IOException {
