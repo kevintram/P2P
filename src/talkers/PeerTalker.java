@@ -175,8 +175,6 @@ public class PeerTalker {
                     int indexOfFirstNew = indexOfFirstNew(neighbor.bitField);
                     if (indexOfFirstNew != -1) {
                         neighbor.connection.sendMessage(new PeerMessage(4, REQUEST, Util.intToByteArr(indexOfFirstNew)));
-                    } else {
-                        System.out.println("");
                     }
                     break;
                 default:

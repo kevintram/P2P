@@ -49,7 +49,6 @@ public class PieceFileHelper {
      * @return returns true if it worked
      */
     public static boolean combine(int pieceCnt, String finalFile, String path) {
-        System.out.println("TRYING TO COMBINE");
         try {
             FileWriter file = new FileWriter(path + File.separator + finalFile, true);
             for(int i = 1; i <= pieceCnt; i++){
