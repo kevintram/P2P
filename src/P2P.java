@@ -116,10 +116,10 @@ public class P2P {
         if (us.hasFile) {
             File theFile = new File(path + File.separator + fileName);
             FileInputStream br = new FileInputStream(theFile);
-            byte[] buff = new byte[8];
+            byte[] buff = new byte[State.pieceSize];
 
             for(int i = 0; i < numPieces; i++) {
-                br.read(buff, 0, 8);
+                br.read(buff, 0, State.pieceSize);
                 PieceFileHelper.updatePieceFile(path, i, buff);
             }
         }
