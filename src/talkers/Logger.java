@@ -86,8 +86,8 @@ public class Logger {
     }
 
     /**
-     * logs when a have message is recieved
-     * @param hostID peer recieving have
+     * logs when a have message is received
+     * @param hostID peer receiving have
      * @param peerID peer sending have
      */
     public static void logHave(int hostID, int peerID) {
@@ -96,10 +96,10 @@ public class Logger {
 
 
     /**
-     * Logs whenever local host downloads peice from neighbor
+     * Logs whenever local host downloads piece from neighbor
      * @param hostID id of local peer
      * @param peerID id of neighbor peer
-     * @param pieceIndex index of peice being downloaded
+     * @param pieceIndex index of piece being downloaded
      */
     public static void logDownload(int hostID, int peerID, int pieceIndex){
         System.out.format("[%s]: Peer [%d] has downloaded the piece [%d] from [%d]%n", getTime(), hostID, pieceIndex, peerID);

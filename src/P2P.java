@@ -1,9 +1,6 @@
 import peer.Neighbor;
 import peer.Peer;
-import talkers.PeerResponder;
-import talkers.PeerTalker;
-import talkers.PieceFileHelper;
-import talkers.State;
+import talkers.*;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -21,7 +18,7 @@ public class P2P {
         parseCommonCfg();
 
         makePieces();
-
+        State.us.startTime = getTime();
         //TODO make these run as separate threads
         startTalking();
         waitForPeersToTalkToMe();
@@ -135,6 +132,10 @@ public class P2P {
             }
             if (complete) {
                 PieceFileHelper.combine(numPieces, fileName, path);
+                Logger.logComplete(us.id);
+                Long startTime = us.startTime;
+                Long endTime = getTime();
+                us.downloadRate = (double)(us.bitField.length) / (double)(startTime - endTime);
             }
         }));
     }
@@ -157,5 +158,9 @@ public class P2P {
 
     public static void startTalking() {
         new PeerTalker().run();
+    }
+
+    public static Long getTime(){
+        return System.nanoTime();
     }
 }
