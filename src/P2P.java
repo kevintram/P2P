@@ -80,9 +80,8 @@ public class P2P {
         State.pieceSize = Integer.parseInt(ss[1]);
         System.out.println(State.pieceSize);
         State.numPieces = State.fileSize / State.pieceSize;
-        if(State.fileSize % State.pieceSize != 0){
-            State.finalPieceSize = State.fileSize % State.pieceSize;
-        }
+        State.finalPieceSize = State.fileSize % State.pieceSize;
+        System.out.println(State.finalPieceSize);
         State.bitfieldPaddingSize = (8 - (State.numPieces % 8));
         State.bitfieldSize = State.numPieces + State.bitfieldPaddingSize;
 
@@ -112,7 +111,7 @@ public class P2P {
             PieceFileHelper.createPieceFile(path, i);
         }
         if(State.finalPieceSize > 0){
-            PieceFileHelper.createPieceFile(path, numPieces + 1);
+            PieceFileHelper.createPieceFile(path, State.numPieces + 1);
         }
 
         // if we have the file, write the file into the pieces
@@ -125,10 +124,13 @@ public class P2P {
                 br.read(buff, 0, State.pieceSize);
                 PieceFileHelper.updatePieceFile(path, i, buff);
             }
+
             if(State.finalPieceSize > 0){
+                buff = new byte[State.finalPieceSize];
                 br.read(buff, 0, State.finalPieceSize);
                 PieceFileHelper.updatePieceFile(path, State.numPieces + 1, buff);
             }
+
         }
 
         // adds a shutdown hook, so on client termination, temp files will combine if the file is complete

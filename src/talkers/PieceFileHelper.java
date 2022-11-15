@@ -11,7 +11,7 @@ public class PieceFileHelper {
     //creates file at given path
     public static boolean createPieceFile(String path, int index) throws IOException {
         //creates a temp file, then sets it to delete on virtual machine termination
-        File temp = new File(path + index + ".tmp");
+        File temp = new File(path + File.separator + index + ".tmp");
         temp.createNewFile();
         temp.deleteOnExit();
         return true;
@@ -37,7 +37,7 @@ public class PieceFileHelper {
     // returns the entire piece as a byte array
     public static byte[] getByteArrOfPiece(String path, int index) {
         try {
-            return Files.readAllBytes(new File(path + index + ".tmp").toPath());
+            return Files.readAllBytes(new File(path + File.separator + index + ".tmp").toPath());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -59,12 +59,12 @@ public class PieceFileHelper {
                 }
             }
             if(State.finalPieceSize > 0){
-                byte[] temp = getByteArrOfPiece(path, State.numPieces + 1);
+                byte[] temp = getByteArrOfPiece(path, State.numPieces);
                 for (byte b : temp) {
                     file.write(b);
                 }
-
             }
+
             file.close();
 
         } catch (IOException e){
