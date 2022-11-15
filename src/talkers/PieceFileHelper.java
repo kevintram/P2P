@@ -59,7 +59,7 @@ public class PieceFileHelper {
                 }
             }
             if(State.finalPieceSize > 0){
-                byte[] temp = getByteArrOfPiece(path, State.numPieces);
+                byte[] temp = getByteArrOfPiece(path, State.numPieces + 1);
                 for (byte b : temp) {
                     file.write(b);
                 }

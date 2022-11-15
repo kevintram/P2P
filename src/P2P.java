@@ -78,10 +78,10 @@ public class P2P {
 
         ss = br.readLine().split(" ");
         State.pieceSize = Integer.parseInt(ss[1]);
-        System.out.println(State.pieceSize);
         State.numPieces = State.fileSize / State.pieceSize;
         State.finalPieceSize = State.fileSize % State.pieceSize;
         System.out.println(State.finalPieceSize);
+        System.out.println(State.numPieces);
         State.bitfieldPaddingSize = (8 - (State.numPieces % 8));
         State.bitfieldSize = State.numPieces + State.bitfieldPaddingSize;
 
@@ -120,7 +120,7 @@ public class P2P {
             FileInputStream br = new FileInputStream(theFile);
             byte[] buff = new byte[State.pieceSize];
 
-            for(int i = 0; i <= State.numPieces; i++) {
+            for(int i = 0; i < State.numPieces; i++) {
                 br.read(buff, 0, State.pieceSize);
                 PieceFileHelper.updatePieceFile(path, i, buff);
             }
@@ -144,7 +144,7 @@ public class P2P {
             }
             if (complete) {
                 PieceFileHelper.combine(fileName, path);
-                Logger.logComplete(us.id);
+               // Logger.logComplete(us.id);
                 //TODO fix this to not check the download rate of the whole file, also so it doesnt get time on shutdown
                 Long startTime = us.startTime;
                 Long endTime = getTime();
