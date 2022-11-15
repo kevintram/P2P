@@ -44,21 +44,29 @@ public class PieceFileHelper {
     }
 
     /**
-     * @param pieceCnt number of pieces
      * @param finalFile file name of the final file to download
      * @param path path to the temp files and where final file will go
      * @return returns true if it worked
      */
-    public static boolean combine(int pieceCnt, String finalFile, String path) {
+    public static boolean combine(String finalFile, String path) {
         try {
+            new FileWriter(path + File.separator + finalFile, false).close();
             FileWriter file = new FileWriter(path + File.separator + finalFile, true);
-            for(int i = 1; i <= pieceCnt; i++){
-                byte[] temp = getByteArrOfPiece(path, i - 1);
+            for(int i = 0; i < State.numPieces; i++){
+                byte[] temp = getByteArrOfPiece(path, i);
                 for (byte b : temp) {
                     file.write(b);
                 }
             }
+            if(State.finalPieceSize > 0){
+                byte[] temp = getByteArrOfPiece(path, State.numPieces + 1);
+                for (byte b : temp) {
+                    file.write(b);
+                }
+
+            }
             file.close();
+
         } catch (IOException e){
             System.out.println("Failed to combine file");
             return false;

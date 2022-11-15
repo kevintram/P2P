@@ -25,6 +25,7 @@ public class State {
     public static int fileSize;
 
     public static int pieceSize;
+    public static int finalPieceSize = 0; //the leftover piece if file isnt evenly divisible
     public static int numPieces;
     public static int bitfieldPaddingSize; // if number of pieces isn't divisible by 8, need to pad with 0's
     public static int bitfieldSize; // this should = numPieces + bitfieldPaddingSize

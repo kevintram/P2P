@@ -78,8 +78,11 @@ public class P2P {
 
         ss = br.readLine().split(" ");
         State.pieceSize = Integer.parseInt(ss[1]);
-
+        System.out.println(State.pieceSize);
         State.numPieces = State.fileSize / State.pieceSize;
+        if(State.fileSize % State.pieceSize != 0){
+            State.finalPieceSize = State.fileSize % State.pieceSize;
+        }
         State.bitfieldPaddingSize = (8 - (State.numPieces % 8));
         State.bitfieldSize = State.numPieces + State.bitfieldPaddingSize;
 
@@ -105,8 +108,11 @@ public class P2P {
         Peer us = State.us;
         int numPieces = State.numPieces;
 
-        for(int i = 0; i < numPieces; i++) {
+        for(int i = 0; i <= numPieces; i++) {
             PieceFileHelper.createPieceFile(path, i);
+        }
+        if(State.finalPieceSize > 0){
+            PieceFileHelper.createPieceFile(path, numPieces + 1);
         }
 
         // if we have the file, write the file into the pieces
@@ -115,9 +121,13 @@ public class P2P {
             FileInputStream br = new FileInputStream(theFile);
             byte[] buff = new byte[State.pieceSize];
 
-            for(int i = 0; i < numPieces; i++) {
+            for(int i = 0; i <= State.numPieces; i++) {
                 br.read(buff, 0, State.pieceSize);
                 PieceFileHelper.updatePieceFile(path, i, buff);
+            }
+            if(State.finalPieceSize > 0){
+                br.read(buff, 0, State.finalPieceSize);
+                PieceFileHelper.updatePieceFile(path, State.numPieces + 1, buff);
             }
         }
 
@@ -131,8 +141,9 @@ public class P2P {
                 }
             }
             if (complete) {
-                PieceFileHelper.combine(numPieces, fileName, path);
+                PieceFileHelper.combine(fileName, path);
                 Logger.logComplete(us.id);
+                //TODO fix this to not check the download rate of the whole file, also so it doesnt get time on shutdown
                 Long startTime = us.startTime;
                 Long endTime = getTime();
                 us.downloadRate = (double)(us.bitField.length) / (double)(startTime - endTime);
