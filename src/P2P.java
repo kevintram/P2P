@@ -106,6 +106,9 @@ public class P2P {
         String fileName = State.fileName;
         Peer us = State.us;
         int numPieces = State.numPieces;
+        Long startTime = us.startTime;
+        Long currTime = getTime();
+        us.downloadRate = (double)(numPieces) / (double)(startTime - currTime);
 
         for(int i = 0; i <= numPieces; i++) {
             PieceFileHelper.createPieceFile(path, i);
@@ -145,10 +148,6 @@ public class P2P {
             if (complete) {
                 PieceFileHelper.combine(fileName, path);
                // Logger.logComplete(us.id);
-                //TODO fix this to not check the download rate of the whole file, also so it doesnt get time on shutdown
-                Long startTime = us.startTime;
-                Long endTime = getTime();
-                us.downloadRate = (double)(us.bitField.length) / (double)(startTime - endTime);
             }
         }));
     }
