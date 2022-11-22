@@ -1,5 +1,7 @@
 package messages;
 import java.util.Arrays;
+import java.util.Optional;
+
 public class PeerMessage {
     public int len;
     public Type type;
@@ -12,10 +14,12 @@ public class PeerMessage {
         payload = Arrays.copyOfRange(b, 6, 6 + len);
     }
 
-    public PeerMessage(int len, Type type, byte[] payload) {
+    public PeerMessage(int len, Type type, Optional<byte[]> payload) {
         this.len = len;
         this.type = type;
-        this.payload = payload;
+        if(payload.isPresent()){
+            this.payload = payload.get();
+        }
     }
 
     public byte[] toByteArray() {

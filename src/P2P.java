@@ -1,3 +1,4 @@
+import messages.PeerMessage;
 import peer.Neighbor;
 import peer.Peer;
 import talkers.*;
@@ -183,19 +184,23 @@ public class P2P {
     //idk a good name for this, clears the unchoked array, the recreates it from neighbor list
     //TODO diff version for if file complete
     public static void unchokeChoke(){
-        for(Peer p : State.unchoked){
+        for(Neighbor p : State.unchoked){
             //TODO send choke message
+            p.connection.sendMessage(new PeerMessage(0, PeerMessage.Type.CHOKE, Optional.empty()));
         }
         State.unchoked.clear();
         int left = State.numPrefNeighbors;
         Collections.sort(State.getNeighbors(), new SortbyDownload());
         State.unchoked = State.getNeighbors().subList(0, State.numPrefNeighbors);
-        for(Peer p : State.unchoked){
+        for(Neighbor p : State.unchoked){
             //TODO send unchoke message
+            p.connection.sendMessage(new PeerMessage(0, PeerMessage.Type.UNCHOKE, Optional.empty()));
         }
     }
 
     public static void optimChokeUnchoke(){
+        if(State.optimisticNeighbor != null)
+            State.optimisticNeighbor.connection.sendMessage(new PeerMessage(0,PeerMessage.Type.CHOKE, Optional.empty()));
         int index = new Random().nextInt(State.getNeighbors().size() - State.numPrefNeighbors);
         index += State.numPrefNeighbors;
         boolean found = false;
@@ -204,6 +209,7 @@ public class P2P {
                 State.optimisticNeighbor = State.getNeighbors().get(index);
             }
         }
+        State.optimisticNeighbor.connection.sendMessage(new PeerMessage(0,PeerMessage.Type.UNCHOKE, Optional.empty()));
     }
 
     public static Long getTime(){

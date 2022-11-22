@@ -9,6 +9,7 @@ import messages.PeerMessage;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.Random;
 
 import static messages.PeerMessage.Type.*;
@@ -64,7 +65,7 @@ public class PeerTalker {
     private void sendBitfield(Neighbor neighbor) {
         PeerConnection conn = neighbor.connection;
 
-        conn.sendMessage(new PeerMessage(State.bitfieldSize, BITFIELD, State.us.bitField));
+        conn.sendMessage(new PeerMessage(State.bitfieldSize, BITFIELD, Optional.of(State.us.bitField)));
 
         PeerMessage res = conn.readMessage();
         State.getNeighborById(neighbor.id).bitField = res.payload;
@@ -73,12 +74,12 @@ public class PeerTalker {
     protected void seeIfInterested(Neighbor neighbor) {
 
         PeerMessage.Type interest = (hasSomethingNew(neighbor.bitField))? INTERESTED: NOT_INTERESTED;
-        neighbor.connection.sendMessage(new PeerMessage(0, interest, new byte[0]));
+        neighbor.connection.sendMessage(new PeerMessage(0, interest, Optional.of(new byte[0])));
 
         if (interest == INTERESTED) {
             int i = randomPieceFrom(neighbor.bitField);
             System.out.println("Requesting for " + i);
-            neighbor.connection.sendMessage(new PeerMessage(4, REQUEST, Util.intToByteArr(i)));
+            neighbor.connection.sendMessage(new PeerMessage(4, REQUEST, Optional.of(Util.intToByteArr(i))));
         }
     }
 
@@ -156,7 +157,7 @@ public class PeerTalker {
                     System.arraycopy(msg.payload, 0, payload, 0, 4); // write index into payload
                     System.arraycopy(piece, 0, payload, 4, piece.length); // write piece into payload
 
-                    neighbor.connection.sendMessage(new PeerMessage(payloadLen, PIECE, payload));
+                    neighbor.connection.sendMessage(new PeerMessage(payloadLen, PIECE, Optional.of(payload)));
                     break;
                 case PIECE:
                     // write the piece down
@@ -179,7 +180,7 @@ public class PeerTalker {
                     byte[] us = State.us.bitField;
                     if (hasSomethingNew(neighbor.bitField)) {
                         int i = randomPieceFrom(neighbor.bitField);
-                        neighbor.connection.sendMessage(new PeerMessage(4, REQUEST, Util.intToByteArr(i)));
+                        neighbor.connection.sendMessage(new PeerMessage(4, REQUEST, Optional.of(Util.intToByteArr(i))));
                     }
                     break;
                 default:
