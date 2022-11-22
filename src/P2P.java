@@ -4,8 +4,7 @@ import talkers.*;
 
 import java.io.*;
 import java.net.ServerSocket;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 
 public class P2P {
 
@@ -170,6 +169,41 @@ public class P2P {
 
     public static void startTalking() {
         new PeerTalker().run();
+    }
+
+    //sorts by download rate, if 2 peers have same rate, 50/50 chance for order
+    static class SortbyDownload implements Comparator<Peer> {
+        public int compare(Peer a, Peer b){
+            if(a.downloadRate == b.downloadRate){
+                return new Random().nextInt(100) >= 50 ? -1 : 1;
+            }
+            return (int)(a.downloadRate - b.downloadRate);
+        }
+    }
+    //idk a good name for this, clears the unchoked array, the recreates it from neighbor list
+    //TODO diff version for if file complete
+    public static void unchokeChoke(){
+        for(Peer p : State.unchoked){
+            //TODO send choke message
+        }
+        State.unchoked.clear();
+        int left = State.numPrefNeighbors;
+        Collections.sort(State.getNeighbors(), new SortbyDownload());
+        State.unchoked = State.getNeighbors().subList(0, State.numPrefNeighbors);
+        for(Peer p : State.unchoked){
+            //TODO send unchoke message
+        }
+    }
+
+    public static void optimChokeUnchoke(){
+        int index = new Random().nextInt(State.getNeighbors().size() - State.numPrefNeighbors);
+        index += State.numPrefNeighbors;
+        boolean found = false;
+        while(!found){
+            if(State.getNeighbors().get(index).interested){
+                State.optimisticNeighbor = State.getNeighbors().get(index);
+            }
+        }
     }
 
     public static Long getTime(){

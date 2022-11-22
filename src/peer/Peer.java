@@ -1,5 +1,9 @@
 package peer;
 
+import talkers.State;
+
+import java.util.*;
+
 public class Peer {
     public final int id;
     public final String hostName;
@@ -11,6 +15,8 @@ public class Peer {
 
     public Long startTime;
 
+
+
     public Peer(int id, String hostName, int port, boolean hasFile) {
         this.id = id;
         this.hostName = hostName;
@@ -18,4 +24,9 @@ public class Peer {
         this.hasFile = hasFile;
         this.downloadRate = -1.0;
     }
+
+    public void setDownloadRate(float rate){
+        this.downloadRate = rate;
+    }
+
 }

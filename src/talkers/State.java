@@ -4,6 +4,7 @@ import peer.Neighbor;
 import peer.Peer;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Holds global state about this process.
@@ -11,8 +12,8 @@ import java.util.*;
  */
 public class State {
     private static final HashMap<Integer, Neighbor> idToNeighbor = new HashMap<>();
-    public static final ArrayList<Neighbor> unchoked = new ArrayList<>();
-
+    public static List<Neighbor> unchoked = new ArrayList<>();
+    public static Neighbor optimisticNeighbor;
     public static Peer us;
 
     public static int startingId;
@@ -38,11 +39,13 @@ public class State {
         }
     }
 
+
+
     public static Neighbor getNeighborById(int id) {
         return idToNeighbor.get(id);
     }
 
-    public static Collection<Neighbor> getNeighbors() {
-        return idToNeighbor.values();
+    public static List<Neighbor> getNeighbors() {
+        return new ArrayList<>(idToNeighbor.values());
     }
 }
