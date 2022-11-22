@@ -6,6 +6,10 @@ import talkers.*;
 import java.io.*;
 import java.net.ServerSocket;
 import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class P2P {
 
@@ -22,6 +26,23 @@ public class P2P {
         //TODO make these run as separate threads
         startTalking();
         waitForPeersToTalkToMe();
+        Timer timer = new Timer();
+        Runnable chokeUnchokeInterval = new Runnable() {
+            @Override
+            public void run() {
+                P2P.unchokeChoke();
+            }
+        };
+        Runnable optimChokeUnchokeInterval = new Runnable() {
+            @Override
+            public void run() {
+                P2P.optimChokeUnchoke();
+            }
+        };
+        ScheduledExecutorService choker = Executors.newScheduledThreadPool(1);
+        choker.scheduleAtFixedRate(chokeUnchokeInterval, 0, State.unchokeInterval, TimeUnit.SECONDS);
+        ScheduledExecutorService optimChoker = Executors.newScheduledThreadPool(1);
+        choker.scheduleAtFixedRate(optimChokeUnchokeInterval, 0, State.optimisticInterval, TimeUnit.SECONDS);
     }
 
     private static void parsePeerInfoFile(int ourId) throws IOException {
@@ -182,16 +203,27 @@ public class P2P {
         }
     }
     //idk a good name for this, clears the unchoked array, the recreates it from neighbor list
-    //TODO diff version for if file complete
     public static void unchokeChoke(){
         for(Neighbor p : State.unchoked){
             //TODO send choke message
             p.connection.sendMessage(new PeerMessage(0, PeerMessage.Type.CHOKE, Optional.empty()));
         }
         State.unchoked.clear();
-        int left = State.numPrefNeighbors;
-        Collections.sort(State.getNeighbors(), new SortbyDownload());
-        State.unchoked = State.getNeighbors().subList(0, State.numPrefNeighbors);
+        if(!State.us.hasFile){
+            //sorts neighbors by download rate, and picks the top n
+            int left = State.numPrefNeighbors;
+            Collections.sort(State.getNeighbors(), new SortbyDownload());
+            State.unchoked = State.getNeighbors().subList(0, State.numPrefNeighbors);
+        } else {
+            //picks random neighbors to unchoke
+            int[] index = new int[State.numPrefNeighbors];
+            for(int i = 0; i < State.numPrefNeighbors; i++){
+                index[i] = new Random().nextInt(State.getNeighbors().size());
+            }
+            for(int i : index){
+                State.unchoked.add(State.getNeighbors().get(i));
+            }
+        }
         for(Neighbor p : State.unchoked){
             //TODO send unchoke message
             p.connection.sendMessage(new PeerMessage(0, PeerMessage.Type.UNCHOKE, Optional.empty()));
