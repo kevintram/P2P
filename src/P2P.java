@@ -17,6 +17,7 @@ public class P2P {
     static Peer us;
 
     public static void main(String[] args) throws IOException {
+        System.out.println("FUCK YOU");
         int id = Integer.parseInt(args[0]);
         System.out.format("Peer: %d \n", id);
         initPeerInfoCfg(id);

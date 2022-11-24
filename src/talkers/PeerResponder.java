@@ -9,7 +9,6 @@ import messages.PeerMessage;
 import piece.PieceFileManager;
 
 import java.net.Socket;
-import java.util.Optional;
 
 import static messages.PeerMessage.Type.BITFIELD;
 

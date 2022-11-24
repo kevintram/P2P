@@ -1,6 +1,5 @@
 package messages;
 import java.util.Arrays;
-import java.util.Optional;
 
 public class PeerMessage {
     public int len;

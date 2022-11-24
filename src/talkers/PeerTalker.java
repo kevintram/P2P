@@ -12,7 +12,6 @@ import piece.PieceFileManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.Random;
 
 import static messages.PeerMessage.Type.*;
@@ -98,14 +97,9 @@ public class PeerTalker implements Runnable {
                     Logger.logNotInterest(us.id, nbr.id);
                     break;
                 case HAVE:
-                    if (msg.payload.isPresent()) {
-                        Logger.logHave(us.id, nbr.id);
-                        int i = Util.byteArrToInt(msg.payload.get());
-                        nbr.bitfield[i] = 1;
-                        break;
-                    } else {
-                        throw new RuntimeException("Received invalid 'have' message from neighbor: " + nbr.id);
-                    }
+                    Logger.logHave(us.id, nbr.id);
+                    int i = Util.byteArrToInt(msg.payload);
+                    nbr.bitfield[i] = 1;
                 case BITFIELD:
                     throw new RuntimeException("Received a bitfield message from " + nbr.id + " (we shouldn't have)");
                 case REQUEST:
@@ -148,7 +142,7 @@ public class PeerTalker implements Runnable {
 
         // send haves to neighbors
         for (Neighbor n : nm.getNeighbors()) {
-            n.connection.sendMessage(new PeerMessage(HAVE, Optional.of(Util.intToByteArr(index))));
+            n.connection.sendMessage(new PeerMessage(HAVE, Util.intToByteArr(index)));
         }
 
         // send another request if still interested
