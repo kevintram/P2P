@@ -46,9 +46,13 @@ public class PieceFileManager {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             boolean complete = true;
             for (int i = 0; i < numPieces; i++){
-                if(us.bitfield[i] == 0){
-                    complete = false;
-                    break;
+                try {
+                    if(us.getBitfield()[0] == 0){
+                        complete = false;
+                        break;
+                    }
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 }
             }
             if (complete) {

@@ -16,7 +16,7 @@ public class P2P {
     static NeighborManager nm;
     static Peer us;
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         System.out.println("FUCK YOU");
         int id = Integer.parseInt(args[0]);
         System.out.format("Peer: %d \n", id);
@@ -66,7 +66,7 @@ public class P2P {
      * Sets all the attributes related to Common.cfg
      * @throws IOException
      */
-    private static void parseCommonCfg() throws IOException {
+    private static void parseCommonCfg() throws IOException, InterruptedException {
         File file = new File("Common.cfg");
         BufferedReader br = new BufferedReader(new FileReader(file));
         String ss[];
@@ -112,7 +112,7 @@ public class P2P {
             Arrays.fill(bitField, Integer.valueOf(0).byteValue());
         }
 
-        us.bitfield = bitField;
+        us.setBitfield(bitField);
         pfm.makePieces(us);
     }
 

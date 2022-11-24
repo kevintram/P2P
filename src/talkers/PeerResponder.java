@@ -24,7 +24,7 @@ public class PeerResponder extends PeerTalker {
     }
 
     @Override
-    protected void start() {
+    protected void start() throws InterruptedException {
         receiveHandshake();
         receiveBitfield();
     }
@@ -43,13 +43,13 @@ public class PeerResponder extends PeerTalker {
         Logger.logConnectionEstablished(us.id, nbr.id);
     }
 
-    private void receiveBitfield() {
+    private void receiveBitfield() throws InterruptedException {
         // read bitfield
         PeerMessage res = conn.readMessage();
-        nbr.bitfield = res.payload;
+        nbr.setBitfield(res.payload);
 
         // send our bitfield
-        conn.sendMessage(new PeerMessage(BITFIELD, us.bitfield));
+        conn.sendMessage(new PeerMessage(BITFIELD, us.getBitfield()));
         System.out.println("Exchanged bitfields with " + nbr.id);
     }
 }

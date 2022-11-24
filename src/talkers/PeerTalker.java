@@ -35,17 +35,28 @@ public class PeerTalker implements Runnable {
 
     @Override
     public void run() {
-        start();
-        requestForPiecesIfInterested();
-        waitForMessages();
+        try {
+            start();
+            requestForPiecesIfInterested();
+            waitForMessages();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
-    protected void start() {
+    protected void start() throws InterruptedException {
         nbr.connection = new PeerConnection(nbr.hostName, nbr.port);
         Logger.logMakeConnection(us.id, nbr.id);
 
         sendHandshake();
-        sendBitfield();
+        //TODO figure out how we should actually handle this
+        try {
+            sendBitfield();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     private void sendHandshake() {
@@ -62,27 +73,28 @@ public class PeerTalker implements Runnable {
         }
     }
 
-    private void sendBitfield() {
+    private void sendBitfield() throws InterruptedException {
 
-        nbr.connection.sendMessage(new PeerMessage(BITFIELD, us.bitfield));
+        nbr.connection.sendMessage(new PeerMessage(BITFIELD, us.getBitfield()));
 
         PeerMessage res = nbr.connection.readMessage();
-        nbr.bitfield = res.payload;
+        nbr.setBitfield(res.payload);
     }
 
-    protected void requestForPiecesIfInterested() {
-        int i = getNewRandomPieceFrom(nbr.bitfield);
+    protected void requestForPiecesIfInterested() throws InterruptedException {
+        int i = getNewRandomPieceFrom(nbr.getBitfield());
 
         PeerMessage.Type interest = (i != -1)? INTERESTED: NOT_INTERESTED;
         nbr.connection.sendMessage(new PeerMessage(interest, new byte[0]));
 
         if (interest == INTERESTED) {
+            us.pendingBitfield(i);
             System.out.println(us.id + " is requesting for " + i + " from " + nbr.id);
             nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(i)));
         }
     }
 
-    protected void waitForMessages() {
+    protected void waitForMessages() throws InterruptedException {
         PeerConnection conn = nbr.connection;
         // runs a loop check for if it receives a message, when it does so it will respond accordingly
         while (conn.getSocket().isConnected()) {
@@ -103,8 +115,9 @@ public class PeerTalker implements Runnable {
                 case HAVE:
                     Logger.logHave(us.id, nbr.id);
                     int i = Util.byteArrToInt(msg.payload);
-                    nbr.bitfield[i] = 1;
+                    nbr.updateBitfield(i);
                     requestForPiecesIfInterested();
+
                     break;
                 case BITFIELD:
                     throw new RuntimeException("Received a bitfield message from " + nbr.id + " (we shouldn't have)");
@@ -134,7 +147,7 @@ public class PeerTalker implements Runnable {
         nbr.connection.sendMessage(new PeerMessage(PIECE, payload));
     }
 
-    private void respondToPieceMsg(PeerMessage msg) {
+    private void respondToPieceMsg(PeerMessage msg) throws InterruptedException {
         // write the piece down
         byte[] indexBuf = Arrays.copyOfRange(msg.payload, 0, 4);
         int index = Util.byteArrToInt(indexBuf);
@@ -142,7 +155,7 @@ public class PeerTalker implements Runnable {
         byte[] pieceContent = Arrays.copyOfRange(msg.payload, 4, msg.len);
 
         pfm.updatePieceFile(index, pieceContent);
-        us.bitfield[index] = 1;
+        us.getBitfield()[index] = 1;
 
         Logger.logDownload(us.id, nbr.id, index);
 
@@ -152,7 +165,7 @@ public class PeerTalker implements Runnable {
         }
 
         // send another request if still interested
-        int i = getNewRandomPieceFrom(nbr.bitfield);
+        int i = getNewRandomPieceFrom(nbr.getBitfield());
         if (i > -1)
             nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(i)));
     }
@@ -160,11 +173,11 @@ public class PeerTalker implements Runnable {
     /**
      * @return the index of a random new piece (one that we don't have). Returns -1 if they have nothing new.
      */
-    private int getNewRandomPieceFrom(byte[] bitfield) {
+    private int getNewRandomPieceFrom(byte[] bitfield) throws InterruptedException {
         ArrayList<Integer> indices = new ArrayList<>();
 
-        for(int i = 0; i < us.bitfield.length && i < bitfield.length; i++) {
-            if(us.bitfield[i] == 0 && bitfield[i] == 1){
+        for(int i = 0; i < us.getBitfield().length && i < bitfield.length; i++) {
+            if(us.getBitfield()[i] == 0 && bitfield[i] == 1){
                 indices.add(i);
             }
         }
