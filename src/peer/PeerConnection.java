@@ -92,6 +92,7 @@ public class PeerConnection {
     }
 
     public PeerMessage readMessage() {
+
         // get payload length
         byte[] lenBuf = new byte[4];
         read(lenBuf, 4);
@@ -104,7 +105,7 @@ public class PeerConnection {
         byte[] payload = new byte[len];
         read(payload, len);
 
-        return new PeerMessage(type, Optional.of(payload));
+        return new PeerMessage(type, payload);
     }
 
     public final Socket getSocket(){

@@ -62,21 +62,21 @@ public class PeerTalker implements Runnable {
 
     private void sendBitfield() {
 
-        nbr.connection.sendMessage(new PeerMessage(BITFIELD, Optional.of(us.bitfield)));
+        nbr.connection.sendMessage(new PeerMessage(BITFIELD, us.bitfield));
 
         PeerMessage res = nbr.connection.readMessage();
-        nbr.bitfield = res.payload.get();
+        nbr.bitfield = res.payload;
     }
 
     protected void seeIfInterested() {
         int i = getNewRandomPieceFrom(nbr.bitfield);
 
         PeerMessage.Type interest = (i != -1)? INTERESTED: NOT_INTERESTED;
-        nbr.connection.sendMessage(new PeerMessage(interest, Optional.empty()));
+        nbr.connection.sendMessage(new PeerMessage(interest, new byte[0]));
 
         if (interest == INTERESTED) {
             System.out.println("Requesting for " + i);
-            nbr.connection.sendMessage(new PeerMessage(REQUEST, Optional.of(Util.intToByteArr(i))));
+            nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(i)));
         }
     }
 
@@ -118,9 +118,8 @@ public class PeerTalker implements Runnable {
 
     private void respondToRequest(PeerMessage msg) {
         // for now, just gonna pretend nobody is choked
-        int pieceIndex = Util.byteArrToInt(msg.payload.get());
-        System.out.println("Got request for " + pieceIndex);
-
+        int pieceIndex = Util.byteArrToInt(msg.payload);
+        System.out.println("Got request for " + pieceIndex + " from " + nbr.id);
         byte[] piece = pfm.getByteArrOfPiece(pieceIndex);
 
         int payloadLen = 4 + piece.length;
@@ -128,15 +127,15 @@ public class PeerTalker implements Runnable {
         System.arraycopy(msg.payload, 0, payload, 0, 4); // write index into payload
         System.arraycopy(piece, 0, payload, 4, piece.length); // write piece into payload
 
-        nbr.connection.sendMessage(new PeerMessage(PIECE, Optional.of(payload)));
+        nbr.connection.sendMessage(new PeerMessage(PIECE, payload));
     }
 
     private void respondToPiece(PeerMessage msg) {
         // write the piece down
-        byte[] indexBuf = Arrays.copyOfRange(msg.payload.get(), 0, 4);
+        byte[] indexBuf = Arrays.copyOfRange(msg.payload, 0, 4);
         int index = Util.byteArrToInt(indexBuf);
 
-        byte[] pieceContent = Arrays.copyOfRange(msg.payload.get(), 4, msg.len);
+        byte[] pieceContent = Arrays.copyOfRange(msg.payload, 4, msg.len);
 
         pfm.updatePieceFile(index, pieceContent);
         us.bitfield[index] = 1;
@@ -151,7 +150,7 @@ public class PeerTalker implements Runnable {
 
         int i = getNewRandomPieceFrom(nbr.bitfield);
         if (i > -1)
-            nbr.connection.sendMessage(new PeerMessage(REQUEST, Optional.of(Util.intToByteArr(i))));
+            nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(i)));
     }
 
     /**
