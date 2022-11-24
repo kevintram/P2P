@@ -73,7 +73,7 @@ public class PeerTalker implements Runnable {
         nbr.connection.sendMessage(new PeerMessage(interest, new byte[0]));
 
         if (interest == INTERESTED) {
-            System.out.println("Requesting for " + i);
+            System.out.println(us.id + " is requesting for " + i + " from " + nbr.id);
             nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(i)));
         }
     }
@@ -100,10 +100,10 @@ public class PeerTalker implements Runnable {
                     Logger.logHave(us.id, nbr.id);
                     int i = Util.byteArrToInt(msg.payload);
                     nbr.bitfield[i] = 1;
+                    requestForPiecesIfInterested();
                     break;
                 case BITFIELD:
                     throw new RuntimeException("Received a bitfield message from " + nbr.id + " (we shouldn't have)");
-
                 case REQUEST:
                     respondToRequestMsg(msg);
                     break;
@@ -119,7 +119,7 @@ public class PeerTalker implements Runnable {
     private void respondToRequestMsg(PeerMessage msg) {
         // for now, just gonna pretend nobody is choked
         int pieceIndex = Util.byteArrToInt(msg.payload);
-        System.out.println("Got request for " + pieceIndex + " from " + nbr.id);
+        System.out.println(us.id + " got request for " + pieceIndex + " from " + nbr.id);
         byte[] piece = pfm.getByteArrOfPiece(pieceIndex);
 
         int payloadLen = 4 + piece.length;
@@ -144,7 +144,7 @@ public class PeerTalker implements Runnable {
 
         // send haves to neighbors
         for (Neighbor n : nm.getNeighbors()) {
-            n.connection.sendMessage(new PeerMessage(HAVE, Util.intToByteArr(index)));
+                n.connection.sendMessage(new PeerMessage(HAVE, Util.intToByteArr(index)));
         }
 
         // send another request if still interested

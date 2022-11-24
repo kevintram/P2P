@@ -15,22 +15,26 @@ public class PeerConnection {
     private InputStream in;
 
     public PeerConnection(String hostName, int port) {
-        try {
-            socket = new Socket(hostName, port);
-            in = socket.getInputStream();
+        while (socket == null || !socket.isConnected()) {
+            try {
+                socket = new Socket(hostName, port);
+                in = socket.getInputStream();
 
-            out = socket.getOutputStream();
-            out.flush();
-        } catch(UnknownHostException e) {
-            System.err.println("Tried connecting to an unknown host: " + hostName);
-            throw new RuntimeException();
-        } catch (IOException e) {
-            e.printStackTrace();
+                out = socket.getOutputStream();
+                out.flush();
+            } catch(UnknownHostException e) {
+                System.err.println("Tried connecting to an unknown host: " + hostName);
+                throw new RuntimeException();
+            } catch (ConnectException ignored) {
+
+            } catch(IOException e) {
+                e.printStackTrace();
+            }
         }
+
     }
 
     public PeerConnection(Socket socket) {
-
         try {
             this.socket = socket;
             in = socket.getInputStream();
