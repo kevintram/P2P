@@ -49,10 +49,10 @@ public class PeerResponder extends PeerTalker {
     private void receiveBitfield() {
         // read bitfield
         PeerMessage res = conn.readMessage();
-        nbr.bitfield = res.payload.get();
+        nbr.bitfield = res.payload;
 
         // send our bitfield
-        conn.sendMessage(new PeerMessage(BITFIELD, Optional.of(us.bitfield)));
+        conn.sendMessage(new PeerMessage(BITFIELD, us.bitfield));
         System.out.println("Exchanged bitfields with " + nbr.id);
     }
 }

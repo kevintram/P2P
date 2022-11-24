@@ -18,7 +18,7 @@ public class P2P {
 
     public static void main(String[] args) throws IOException {
         int id = Integer.parseInt(args[0]);
-
+        System.out.format("Peer: %d \n", id);
         initPeerInfoCfg(id);
         parseCommonCfg();
 
