@@ -155,15 +155,14 @@ public class PeerTalker implements Runnable {
         byte[] pieceContent = Arrays.copyOfRange(msg.payload, 4, msg.len);
 
         pfm.updatePieceFile(index, pieceContent);
-        us.getBitfield()[index] = 1;
+        us.updateBitfield(index);
 
         Logger.logDownload(us.id, nbr.id, index);
-
         // send haves to neighbors
         for (Neighbor n : nm.getNeighbors()) {
                 n.connection.sendMessage(new PeerMessage(HAVE, Util.intToByteArr(index)));
         }
-        if(us.finishedFile())
+        if(us.finishedFile(pfm.numPieces))
             us.hasFile = true;
         requestForPiecesIfInterested();
     }

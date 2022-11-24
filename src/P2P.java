@@ -41,8 +41,8 @@ public class P2P {
         String lineBuf;
         while ((lineBuf = br.readLine()) != null){
             String[] lineSplit = lineBuf.split(" ");
-
             int id = Integer.parseInt(lineSplit[0]);
+
             String hostName = lineSplit[1];
             int port = Integer.parseInt(lineSplit[2]);
             boolean hasFile = Integer.parseInt(lineSplit[3]) == 1;

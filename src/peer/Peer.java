@@ -1,5 +1,8 @@
 package peer;
 
+import logger.Logger;
+import piece.PieceFileManager;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -70,11 +73,16 @@ public class Peer {
         latch.countDown();
     }
 
-    public boolean finishedFile() {
-        for(byte b : bitfield){
-            if(b != 1)
+
+    public boolean finishedFile(int numPieces) {
+        int buffer = (8 - (numPieces % 8));
+        for(int i = 0; i < bitfield.length-buffer; i++){
+            if(bitfield[i] == 0){
                 return false;
+            }
+
         }
+        Logger.logComplete(this.id);
         return true;
     }
 }
