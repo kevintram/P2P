@@ -7,6 +7,7 @@ import java.io.*;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Optional;
 
 public class PeerConnection {
 
@@ -103,7 +104,7 @@ public class PeerConnection {
         byte[] payload = new byte[len];
         read(payload, len);
 
-        return new PeerMessage(type, payload);
+        return new PeerMessage(type, Optional.of(payload));
     }
 
     public final Socket getSocket(){

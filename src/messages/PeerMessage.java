@@ -5,17 +5,17 @@ import java.util.Optional;
 public class PeerMessage {
     public int len;
     public Type type;
-    public byte[] payload;
+    public Optional<byte[]> payload;
 
     // parse an array of bytes to construct a message
     public PeerMessage(byte[] b) {
         len = Util.byteArrToInt(Arrays.copyOfRange(b, 0, 4)); // length in first 4 bytes
         type = Type.values()[b[5]]; // type in 5th byte
-        payload = Arrays.copyOfRange(b, 6, 6 + len);
+        payload = Optional.of(Arrays.copyOfRange(b, 6, 6 + len));
     }
 
-    public PeerMessage(Type type, byte[] payload) {
-        this.len = payload.length;
+    public PeerMessage(Type type, Optional<byte[]> payload) {
+        this.len = payload.map(it -> it.length).orElse(0);
         this.type = type;
         this.payload = payload;
     }
@@ -37,7 +37,7 @@ public class PeerMessage {
 
             boolean lengthMatches = other.len == this.len;
             boolean typeMatches = other.type == this.type;
-            boolean payloadMatches = Arrays.equals(other.payload, this.payload);
+            boolean payloadMatches = Arrays.equals(other.payload.get(), this.payload.get());
 
             return lengthMatches && typeMatches && payloadMatches;
         }

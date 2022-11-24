@@ -1,11 +1,9 @@
+import messages.PeerMessage;
 import neighbor.NeighborManager;
 import peer.Neighbor;
 import peer.Peer;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Random;
-import java.util.Timer;
+import java.util.*;
 
 public class ChokeHelper {
 
@@ -70,13 +68,13 @@ public class ChokeHelper {
        }
        for(Neighbor p : nm.unchoked){
            //TODO send unchoke message
-           //p.connection.sendMessage(new PeerMessage(0, PeerMessage.Type.UNCHOKE, Optional.empty()));
+           p.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, Optional.empty()));
        }
    }
 
    public void optimChokeUnchoke(){
        if (nm.optimisticNeighbor != null){
-           //State.optimisticNeighbor.connection.sendMessage(new PeerMessage(0,PeerMessage.Type.CHOKE, Optional.empty()));
+           nm.optimisticNeighbor.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, Optional.empty()));
        }
        int index = new Random().nextInt(nm.getNeighbors().size() - numPrefNeighbors);
        index += numPrefNeighbors;
@@ -86,7 +84,7 @@ public class ChokeHelper {
                nm.optimisticNeighbor = nm.getNeighbors().get(index);
            }
        }
-       //State.optimisticNeighbor.connection.sendMessage(new PeerMessage(0,PeerMessage.Type.UNCHOKE, Optional.empty()));
+       nm.optimisticNeighbor.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, Optional.empty()));
    }
 
    public static Long getTime(){
