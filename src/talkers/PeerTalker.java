@@ -41,12 +41,11 @@ public class PeerTalker implements Runnable {
 
         sendHandshake();
         sendBitfield();
-        seeIfInterested();
+        requestForPiecesIfInterested();
         waitForMessages();
     }
 
     private void sendHandshake() {
-
         // send a handshake
         nbr.connection.send(new Handshake(us.id).toByteArray());
 
@@ -61,14 +60,13 @@ public class PeerTalker implements Runnable {
     }
 
     private void sendBitfield() {
-
         nbr.connection.sendMessage(new PeerMessage(BITFIELD, Optional.of(us.bitfield)));
 
         PeerMessage res = nbr.connection.readMessage();
         nbr.bitfield = res.payload.get();
     }
 
-    protected void seeIfInterested() {
+    protected void requestForPiecesIfInterested() {
         int i = getNewRandomPieceFrom(nbr.bitfield);
 
         PeerMessage.Type interest = (i != -1)? INTERESTED: NOT_INTERESTED;
@@ -99,16 +97,21 @@ public class PeerTalker implements Runnable {
                     Logger.logNotInterest(us.id, nbr.id);
                     break;
                 case HAVE:
-                    Logger.logHave(us.id, nbr.id);
-                    // mark it down
-                    break;
+                    if (msg.payload.isPresent()) {
+                        Logger.logHave(us.id, nbr.id);
+                        int i = Util.byteArrToInt(msg.payload.get());
+                        nbr.bitfield[i] = 1;
+                        break;
+                    } else {
+                        throw new RuntimeException("Received invalid 'have' message from neighbor: " + nbr.id);
+                    }
                 case BITFIELD:
-                    break;
+                    throw new RuntimeException("Received a bitfield message from " + nbr.id + " (we shouldn't have)");
                 case REQUEST:
-                    respondToRequest(msg);
+                    respondToRequestMsg(msg);
                     break;
                 case PIECE:
-                    respondToPiece(msg);
+                    respondToPieceMsg(msg);
                     break;
                 default:
                     throw new RuntimeException("Invalid Message Type");
@@ -116,7 +119,7 @@ public class PeerTalker implements Runnable {
         }
     }
 
-    private void respondToRequest(PeerMessage msg) {
+    private void respondToRequestMsg(PeerMessage msg) {
         // for now, just gonna pretend nobody is choked
         int pieceIndex = Util.byteArrToInt(msg.payload.get());
         System.out.println("Got request for " + pieceIndex);
@@ -131,7 +134,7 @@ public class PeerTalker implements Runnable {
         nbr.connection.sendMessage(new PeerMessage(PIECE, Optional.of(payload)));
     }
 
-    private void respondToPiece(PeerMessage msg) {
+    private void respondToPieceMsg(PeerMessage msg) {
         // write the piece down
         byte[] indexBuf = Arrays.copyOfRange(msg.payload.get(), 0, 4);
         int index = Util.byteArrToInt(indexBuf);
@@ -143,12 +146,12 @@ public class PeerTalker implements Runnable {
 
         Logger.logDownload(us.id, nbr.id, index);
 
-        // TODO: send haves and not-interesteds
-//                    for (Neighbor n : State.getNeighbors()) {
-//                        n.connection.sendMessage(new PeerMessage(4, HAVE, Util.intToByteArr(index)));
-//                    }
-        // send another request if still interested
+        // send haves to neighbors
+        for (Neighbor n : nm.getNeighbors()) {
+            n.connection.sendMessage(new PeerMessage(HAVE, Optional.of(Util.intToByteArr(index))));
+        }
 
+        // send another request if still interested
         int i = getNewRandomPieceFrom(nbr.bitfield);
         if (i > -1)
             nbr.connection.sendMessage(new PeerMessage(REQUEST, Optional.of(Util.intToByteArr(i))));

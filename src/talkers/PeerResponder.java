@@ -28,7 +28,7 @@ public class PeerResponder extends PeerTalker {
     public void run() {
         receiveHandshake();
         receiveBitfield();
-        seeIfInterested();
+        requestForPiecesIfInterested();
         waitForMessages();
     }
 
