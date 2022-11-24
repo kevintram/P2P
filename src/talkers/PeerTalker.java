@@ -106,9 +106,11 @@ public class PeerTalker implements Runnable {
                     Logger.logUnchoke(us.id, nbr.id);
                     break;
                 case INTERESTED:
+                    nbr.interested = INTERESTED;
                     Logger.logInterest(us.id, nbr.id);
                     break;
                 case NOT_INTERESTED:
+                    nbr.interested = NOT_INTERESTED;
                     Logger.logNotInterest(us.id, nbr.id);
                     break;
                 case HAVE:
