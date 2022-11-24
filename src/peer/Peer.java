@@ -1,5 +1,8 @@
 package peer;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 public class Peer {
     public final int id;
     public final String hostName;
@@ -11,7 +14,9 @@ public class Peer {
 
     public Long startTime;
 
-    private boolean locked = false;
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private CountDownLatch latch;
+
     public Peer(int id, String hostName, int port, boolean hasFile) {
         this.id = id;
         this.hostName = hostName;
@@ -26,30 +31,42 @@ public class Peer {
 
 
     public byte[] getBitfield() throws InterruptedException {
+        lock.readLock().lock();
         //to ensure a read happens after a write, lock until writer done
-        if(locked)
-            wait();
-        return bitfield;
+        if(lock.isWriteLocked())
+            latch.await();
+        byte [] temp = bitfield;
+        lock.readLock().unlock();
+        return temp;
     }
 
-    public void updateBitfield(int index) {
-        locked = true;
+    public void updateBitfield(int index) throws InterruptedException {
+        if(lock.isWriteLocked())
+            latch.await();
+        lock.writeLock().lock();
+        latch = new CountDownLatch(1);
         this.bitfield[index] = 1;
-        locked = false;
-        notifyAll(); //tells readers they can read again
+        lock.writeLock().unlock();
+        latch.countDown();
     }
 
-    public void setBitfield(byte[] newField) {
-        locked = true;
+    public void setBitfield(byte[] newField) throws InterruptedException {
+        if(lock.isWriteLocked())
+            latch.await();
+        lock.writeLock().lock();
+        latch = new CountDownLatch(1);
         this.bitfield = newField;
-        locked = false;
-        notifyAll();
+        lock.writeLock().unlock();
+        latch.countDown();
     }
 
-    public void pendingBitfield(int index) {
-        locked = true;
+    public void pendingBitfield(int index) throws InterruptedException {
+        if(lock.isWriteLocked())
+            latch.await();
+        lock.writeLock().lock();
+        latch = new CountDownLatch(1);
         this.bitfield[index] = -1;
-        locked = false;
-        notifyAll(); //tells readers they can read again
+        lock.writeLock().unlock();
+        latch.countDown();
     }
 }

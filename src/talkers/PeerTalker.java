@@ -133,7 +133,7 @@ public class PeerTalker implements Runnable {
         }
     }
 
-    private void respondToRequestMsg(PeerMessage msg) {
+    private void respondToRequestMsg(PeerMessage msg) throws InterruptedException {
         // for now, just gonna pretend nobody is choked
         int pieceIndex = Util.byteArrToInt(msg.payload);
         System.out.println(us.id + " got request for " + pieceIndex + " from " + nbr.id);
@@ -143,6 +143,7 @@ public class PeerTalker implements Runnable {
         byte[] payload = new byte[payloadLen];
         System.arraycopy(msg.payload, 0, payload, 0, 4); // write index into payload
         System.arraycopy(piece, 0, payload, 4, piece.length); // write piece into payload
+
 
         nbr.connection.sendMessage(new PeerMessage(PIECE, payload));
     }
@@ -164,10 +165,7 @@ public class PeerTalker implements Runnable {
                 n.connection.sendMessage(new PeerMessage(HAVE, Util.intToByteArr(index)));
         }
 
-        // send another request if still interested
-        int i = getNewRandomPieceFrom(nbr.getBitfield());
-        if (i > -1)
-            nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(i)));
+        requestForPiecesIfInterested();
     }
 
     /**
