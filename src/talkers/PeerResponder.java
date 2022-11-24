@@ -24,11 +24,9 @@ public class PeerResponder extends PeerTalker {
     }
 
     @Override
-    public void run() {
+    protected void start() {
         receiveHandshake();
         receiveBitfield();
-        requestForPiecesIfInterested();
-        waitForMessages();
     }
 
     private void receiveHandshake() {

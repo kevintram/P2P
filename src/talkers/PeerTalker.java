@@ -35,13 +35,17 @@ public class PeerTalker implements Runnable {
 
     @Override
     public void run() {
+        start();
+        requestForPiecesIfInterested();
+        waitForMessages();
+    }
+
+    protected void start() {
         nbr.connection = new PeerConnection(nbr.hostName, nbr.port);
         Logger.logMakeConnection(us.id, nbr.id);
 
         sendHandshake();
         sendBitfield();
-        requestForPiecesIfInterested();
-        waitForMessages();
     }
 
     private void sendHandshake() {
