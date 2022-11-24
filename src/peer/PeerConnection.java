@@ -8,7 +8,6 @@ import java.net.ConnectException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-//TODO set up a thread system so we can download from multiple clients and upload to multiple
 public class PeerConnection {
 
     private Socket socket;
@@ -104,7 +103,7 @@ public class PeerConnection {
         byte[] payload = new byte[len];
         read(payload, len);
 
-        return new PeerMessage(len, type, payload);
+        return new PeerMessage(type, payload);
     }
 
     public final Socket getSocket(){

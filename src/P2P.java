@@ -1,51 +1,37 @@
-import messages.PeerMessage;
+import neighbor.NeighborManager;
 import peer.Neighbor;
 import peer.Peer;
+import piece.PieceFileManager;
 import talkers.*;
 
 import java.io.*;
 import java.net.ServerSocket;
 import java.util.*;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class P2P {
+    static PieceFileManager pfm;
+    static NeighborManager nm;
+    static Peer us;
 
     public static void main(String[] args) throws IOException {
         int id = Integer.parseInt(args[0]);
 
-        State.path = "peer_" + id + File.separator;
-
-        parsePeerInfoFile(id);
+        initPeerInfoCfg(id);
         parseCommonCfg();
 
-        makePieces();
-        State.us.startTime = getTime();
-        //TODO make these run as separate threads
-        startTalking();
+        startTalkingTo(nm.getNeighbors());
         waitForPeersToTalkToMe();
-        Timer timer = new Timer();
-        Runnable chokeUnchokeInterval = new Runnable() {
-            @Override
-            public void run() {
-                P2P.unchokeChoke();
-            }
-        };
-        Runnable optimChokeUnchokeInterval = new Runnable() {
-            @Override
-            public void run() {
-                P2P.optimChokeUnchoke();
-            }
-        };
-        ScheduledExecutorService choker = Executors.newScheduledThreadPool(1);
-        choker.scheduleAtFixedRate(chokeUnchokeInterval, 0, State.unchokeInterval, TimeUnit.SECONDS);
-        ScheduledExecutorService optimChoker = Executors.newScheduledThreadPool(1);
-        choker.scheduleAtFixedRate(optimChokeUnchokeInterval, 0, State.optimisticInterval, TimeUnit.SECONDS);
     }
 
-    private static void parsePeerInfoFile(int ourId) throws IOException {
+    /**
+     * Sets us and our neighbors from the PeerInfo.cfg file
+     * @param ourId
+     * @throws IOException
+     */
+    private static void initPeerInfoCfg(int ourId) throws IOException {
         ArrayList<Neighbor> neighbors = new ArrayList<>();
 
         boolean foundUs = false;
@@ -61,125 +47,89 @@ public class P2P {
             boolean hasFile = Integer.parseInt(lineSplit[3]) == 1;
 
             if (id == ourId) {
-                State.us = new Peer(id, hostName , port, hasFile);
+                us = new Peer(id, hostName , port, hasFile);
                 foundUs = true;
             } else {
                 neighbors.add(new Neighbor(id, hostName, port, hasFile));
             }
         }
 
-        State.startingId = neighbors.get(0).id;
-
         if (!foundUs) {
             throw new RuntimeException("Error: Could not find given id in PeerInfo.cfg!");
         }
 
-        State.setNeighbors(neighbors);
+        nm = new NeighborManager(neighbors);
     }
 
+    /**
+     * Sets all the attributes related to Common.cfg
+     * @throws IOException
+     */
     private static void parseCommonCfg() throws IOException {
         File file = new File("Common.cfg");
         BufferedReader br = new BufferedReader(new FileReader(file));
         String ss[];
 
         ss = br.readLine().split(" ");
-        State.numPrefNeighbors = Integer.parseInt(ss[1]);
+        int numPrefNeighbors = Integer.parseInt(ss[1]);
 
         ss = br.readLine().split(" ");
-        State.unchokeInterval = Integer.parseInt(ss[1]);
+        int unchokeInterval = Integer.parseInt(ss[1]);
 
         ss = br.readLine().split(" ");
-        State.optimisticInterval = Integer.parseInt(ss[1]);
+        int optimisticInterval = Integer.parseInt(ss[1]);
+
+        startChokingThreads(unchokeInterval, optimisticInterval);
 
         ss = br.readLine().split(" ");
-        State.fileName = ss[1];
+        String fileName = ss[1];
 
         ss = br.readLine().split(" ");
-        State.fileSize = Integer.parseInt(ss[1]);
+        int fileSize = Integer.parseInt(ss[1]);
 
         ss = br.readLine().split(" ");
-        State.pieceSize = Integer.parseInt(ss[1]);
-        State.numPieces = State.fileSize / State.pieceSize;
-        State.finalPieceSize = State.fileSize % State.pieceSize;
-        System.out.println(State.finalPieceSize);
-        System.out.println(State.numPieces);
-        State.bitfieldPaddingSize = (8 - (State.numPieces % 8));
-        State.bitfieldSize = State.numPieces + State.bitfieldPaddingSize;
+        int pieceSize = Integer.parseInt(ss[1]);
+
+        int numPieces =  (int)Math.ceil((double)fileSize / pieceSize);
+        int finalPieceSize = fileSize % pieceSize;
+        int bitfieldPaddingSize = (8 - (numPieces % 8));
+        int bitfieldSize = numPieces + bitfieldPaddingSize;
+
+        String ourPath = "peer_" + us.id + File.separator;
+        pfm = new PieceFileManager(ourPath, fileName, pieceSize, finalPieceSize, numPieces);
 
         // set our bitfield
-        byte[] bitField = new byte[State.bitfieldSize];
+        byte[] bitField = new byte[bitfieldSize];
         // fills array with 1's if it has file
-        if (State.us.hasFile) {
+        if (us.hasFile) {
             Arrays.fill(bitField, Integer.valueOf(1).byteValue());
             // padded bits need to be 0 always
-            for (int i = 0; i < State.bitfieldPaddingSize; i++) {
-                bitField[State.numPieces + i] = 0;
+            for (int i = 0; i < bitfieldPaddingSize; i++) {
+                bitField[numPieces + i] = 0;
             }
         } else {
             Arrays.fill(bitField, Integer.valueOf(0).byteValue());
         }
 
-        State.us.bitField = bitField;
+        us.bitfield = bitField;
+        pfm.makePieces(us);
     }
 
-    public static void makePieces() throws IOException {
-        String path = State.path;
-        String fileName = State.fileName;
-        Peer us = State.us;
-        int numPieces = State.numPieces;
-        Long startTime = us.startTime;
-        Long currTime = getTime();
-        us.downloadRate = (double)(numPieces) / (double)(startTime - currTime);
-
-        for(int i = 0; i <= numPieces; i++) {
-            PieceFileHelper.createPieceFile(path, i);
+    public static void startTalkingTo(List<Neighbor> neighbors) {
+        for (Neighbor neighbor : neighbors) {
+            if (neighbor.id < us.id) {
+                new Thread(new PeerTalker(us, neighbor, pfm, nm)).start();
+            }
         }
-        if(State.finalPieceSize > 0){
-            PieceFileHelper.createPieceFile(path, State.numPieces + 1);
-        }
-
-        // if we have the file, write the file into the pieces
-        if (us.hasFile) {
-            File theFile = new File(path + File.separator + fileName);
-            FileInputStream br = new FileInputStream(theFile);
-            byte[] buff = new byte[State.pieceSize];
-
-            for(int i = 0; i < State.numPieces; i++) {
-                br.read(buff, 0, State.pieceSize);
-                PieceFileHelper.updatePieceFile(path, i, buff);
-            }
-
-            if(State.finalPieceSize > 0){
-                buff = new byte[State.finalPieceSize];
-                br.read(buff, 0, State.finalPieceSize);
-                PieceFileHelper.updatePieceFile(path, State.numPieces + 1, buff);
-            }
-
-        }
-
-        // adds a shutdown hook, so on client termination, temp files will combine if the file is complete
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            boolean complete = true;
-            for (int i = 1; i <= numPieces; i++){
-                if(us.bitField[i - 1] == 0){
-                    complete = false;
-                    break;
-                }
-            }
-            if (complete) {
-                PieceFileHelper.combine(fileName, path);
-               // Logger.logComplete(us.id);
-            }
-        }));
     }
 
     public static void waitForPeersToTalkToMe() {
         try {
-            ServerSocket server = new ServerSocket(State.us.port);
+            ServerSocket server = new ServerSocket(us.port);
             try {
                 // when a peer tries to connect to us, run a talkers.PeerResponder
                 while (true) {
-                    new Thread(new PeerResponder(server.accept())).start();
+                    new Thread(new PeerResponder(server.accept(), us, pfm, nm)).start();
                 }
             } finally {
                 server.close();
@@ -189,62 +139,11 @@ public class P2P {
         }
     }
 
-    public static void startTalking() {
-        new PeerTalker().run();
-    }
-
-    //sorts by download rate, if 2 peers have same rate, 50/50 chance for order
-    static class SortbyDownload implements Comparator<Peer> {
-        public int compare(Peer a, Peer b){
-            if(a.downloadRate == b.downloadRate){
-                return new Random().nextInt(100) >= 50 ? -1 : 1;
-            }
-            return (int)(a.downloadRate - b.downloadRate);
-        }
-    }
-    //idk a good name for this, clears the unchoked array, the recreates it from neighbor list
-    public static void unchokeChoke(){
-        for(Neighbor p : State.unchoked){
-            //TODO send choke message
-            p.connection.sendMessage(new PeerMessage(0, PeerMessage.Type.CHOKE, Optional.empty()));
-        }
-        State.unchoked.clear();
-        if(!State.us.hasFile){
-            //sorts neighbors by download rate, and picks the top n
-            int left = State.numPrefNeighbors;
-            Collections.sort(State.getNeighbors(), new SortbyDownload());
-            State.unchoked = State.getNeighbors().subList(0, State.numPrefNeighbors);
-        } else {
-            //picks random neighbors to unchoke
-            int[] index = new int[State.numPrefNeighbors];
-            for(int i = 0; i < State.numPrefNeighbors; i++){
-                index[i] = new Random().nextInt(State.getNeighbors().size());
-            }
-            for(int i : index){
-                State.unchoked.add(State.getNeighbors().get(i));
-            }
-        }
-        for(Neighbor p : State.unchoked){
-            //TODO send unchoke message
-            p.connection.sendMessage(new PeerMessage(0, PeerMessage.Type.UNCHOKE, Optional.empty()));
-        }
-    }
-
-    public static void optimChokeUnchoke(){
-        if(State.optimisticNeighbor != null)
-            State.optimisticNeighbor.connection.sendMessage(new PeerMessage(0,PeerMessage.Type.CHOKE, Optional.empty()));
-        int index = new Random().nextInt(State.getNeighbors().size() - State.numPrefNeighbors);
-        index += State.numPrefNeighbors;
-        boolean found = false;
-        while(!found){
-            if(State.getNeighbors().get(index).interested){
-                State.optimisticNeighbor = State.getNeighbors().get(index);
-            }
-        }
-        State.optimisticNeighbor.connection.sendMessage(new PeerMessage(0,PeerMessage.Type.UNCHOKE, Optional.empty()));
-    }
-
-    public static Long getTime(){
-        return System.nanoTime();
+    private static void startChokingThreads(int unchokeInterval, int optimisticInterval) {
+        ChokeHelper ch = new ChokeHelper(nm, us);
+        ScheduledExecutorService choker = Executors.newScheduledThreadPool(1);
+        choker.scheduleAtFixedRate(ch.chokeUnchokeInterval, 0, unchokeInterval, TimeUnit.SECONDS);
+        ScheduledExecutorService optimChoker = Executors.newScheduledThreadPool(1);
+        optimChoker.scheduleAtFixedRate(ch.optimChokeUnchokeInterval, 0, optimisticInterval, TimeUnit.SECONDS);
     }
 }

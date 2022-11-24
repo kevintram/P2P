@@ -14,12 +14,10 @@ public class PeerMessage {
         payload = Arrays.copyOfRange(b, 6, 6 + len);
     }
 
-    public PeerMessage(int len, Type type, Optional<byte[]> payload) {
-        this.len = len;
+    public PeerMessage(Type type, byte[] payload) {
+        this.len = payload.length;
         this.type = type;
-        if(payload.isPresent()){
-            this.payload = payload.get();
-        }
+        this.payload = payload;
     }
 
     public byte[] toByteArray() {

@@ -1,21 +1,15 @@
 package peer;
 
-import talkers.State;
-
-import java.util.*;
-
 public class Peer {
     public final int id;
     public final String hostName;
     public final int port;
     public boolean hasFile;
-    public byte[] bitField;
+    public byte[] bitfield;
 
     public double downloadRate; // this will be set to -1 UNLESS the file has completed download
 
     public Long startTime;
-
-
 
     public Peer(int id, String hostName, int port, boolean hasFile) {
         this.id = id;
