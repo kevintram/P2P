@@ -41,6 +41,8 @@ public class PeerResponder extends PeerTalker {
         // send back handshake
         conn.send(new Handshake(us.id).toByteArray());
         Logger.logConnectionEstablished(us.id, nbr.id);
+
+
     }
 
     private void receiveBitfield() throws InterruptedException {

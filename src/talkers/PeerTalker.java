@@ -83,11 +83,10 @@ public class PeerTalker implements Runnable {
 
     protected void requestForPiecesIfInterested() throws InterruptedException {
         int i = getNewRandomPieceFrom(nbr.getBitfield());
+        if(i != -1) nbr.setInterested(INTERESTED);
+        else nbr.setInterested(NOT_INTERESTED);
 
-        PeerMessage.Type interest = (i != -1)? INTERESTED: NOT_INTERESTED;
-        nbr.connection.sendMessage(new PeerMessage(interest, new byte[0]));
-
-        if (interest == INTERESTED) {
+        if (nbr.interested == INTERESTED) {
             us.pendingBitfield(i);
             System.out.println(us.id + " is requesting for " + i + " from " + nbr.id);
             nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(i)));
@@ -164,7 +163,8 @@ public class PeerTalker implements Runnable {
         for (Neighbor n : nm.getNeighbors()) {
                 n.connection.sendMessage(new PeerMessage(HAVE, Util.intToByteArr(index)));
         }
-
+        if(us.finishedFile())
+            us.hasFile = true;
         requestForPiecesIfInterested();
     }
 

@@ -80,7 +80,7 @@ public class ChokeHelper {
        index += numPrefNeighbors;
        boolean found = false;
        while(!found){
-           if(nm.getNeighbors().get(index).interested){
+           if(nm.getNeighbors().get(index).interested == PeerMessage.Type.INTERESTED){
                nm.optimisticNeighbor = nm.getNeighbors().get(index);
            }
        }

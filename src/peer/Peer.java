@@ -69,4 +69,12 @@ public class Peer {
         lock.writeLock().unlock();
         latch.countDown();
     }
+
+    public boolean finishedFile() {
+        for(byte b : bitfield){
+            if(b != 1)
+                return false;
+        }
+        return true;
+    }
 }
