@@ -100,8 +100,10 @@ public class PeerTalker implements Runnable {
                     Logger.logHave(us.id, nbr.id);
                     int i = Util.byteArrToInt(msg.payload);
                     nbr.bitfield[i] = 1;
+                    break;
                 case BITFIELD:
                     throw new RuntimeException("Received a bitfield message from " + nbr.id + " (we shouldn't have)");
+
                 case REQUEST:
                     respondToRequestMsg(msg);
                     break;
