@@ -8,7 +8,6 @@ import java.net.ConnectException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-//TODO set up a thread system so we can download from multiple clients and upload to multiple
 public class PeerConnection {
 
     private Socket socket;
@@ -16,26 +15,26 @@ public class PeerConnection {
     private InputStream in;
 
     public PeerConnection(String hostName, int port) {
+        while (socket == null || !socket.isConnected()) {
+            try {
+                socket = new Socket(hostName, port);
+                in = socket.getInputStream();
 
-        try {
-            socket = new Socket(hostName, port);
-            in = socket.getInputStream();
+                out = socket.getOutputStream();
+                out.flush();
+            } catch(UnknownHostException e) {
+                System.err.println("Tried connecting to an unknown host: " + hostName);
+                throw new RuntimeException();
+            } catch (ConnectException ignored) {
 
-            out = socket.getOutputStream();
-            out.flush();
-        } catch(UnknownHostException e) {
-            System.err.println("Tried connecting to an unknown host: " + hostName);
-            throw new RuntimeException();
-        } catch (ConnectException e) {
-            System.err.println("Connection refused. Need to start peer at hostname " + hostName + " and port " + port);
-            throw new RuntimeException();
-        } catch (IOException e) {
-            e.printStackTrace();
+            } catch(IOException e) {
+                e.printStackTrace();
+            }
         }
+
     }
 
     public PeerConnection(Socket socket) {
-
         try {
             this.socket = socket;
             in = socket.getInputStream();
@@ -92,6 +91,7 @@ public class PeerConnection {
     }
 
     public PeerMessage readMessage() {
+
         // get payload length
         byte[] lenBuf = new byte[4];
         read(lenBuf, 4);
@@ -104,7 +104,7 @@ public class PeerConnection {
         byte[] payload = new byte[len];
         read(payload, len);
 
-        return new PeerMessage(len, type, payload);
+        return new PeerMessage(type, payload);
     }
 
     public final Socket getSocket(){

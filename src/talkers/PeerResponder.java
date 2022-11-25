@@ -1,9 +1,12 @@
 package talkers;
 
-import peer.Neighbor;
+import logger.Logger;
+import neighbor.NeighborManager;
+import peer.Peer;
 import peer.PeerConnection;
 import messages.Handshake;
 import messages.PeerMessage;
+import piece.PieceFileManager;
 
 import java.net.Socket;
 
@@ -12,20 +15,18 @@ import static messages.PeerMessage.Type.BITFIELD;
 /**
  * The one who accepts and responds to handshakes
  */
-public class PeerResponder extends PeerTalker implements Runnable {
-    private Neighbor neighbor;
+public class PeerResponder extends PeerTalker {
     private final PeerConnection conn;
 
-    public PeerResponder(Socket socket)  {
+    public PeerResponder(Socket socket, Peer us, PieceFileManager pfm, NeighborManager nm)  {
+        super(us, null, pfm, nm);
         conn = new PeerConnection(socket);
     }
 
     @Override
-    public void run() {
+    protected void start() throws InterruptedException {
         receiveHandshake();
         receiveBitfield();
-        seeIfInterested(neighbor);
-        waitForMessages(neighbor);
     }
 
     private void receiveHandshake() {
@@ -34,22 +35,23 @@ public class PeerResponder extends PeerTalker implements Runnable {
         conn.read(buf, 32);
         Handshake handshake = new Handshake(buf);
 
-        neighbor = State.getNeighborById(handshake.id);
-        neighbor.connection = conn;
+        nbr = nm.getNeighborById(handshake.id);
+        nbr.connection = conn;
 
         // send back handshake
-        conn.send(new Handshake(State.us.id).toByteArray());
-        Logger.logConnectionEstablished(State.us.id, neighbor.id);
+        conn.send(new Handshake(us.id).toByteArray());
+        Logger.logConnectionEstablished(us.id, nbr.id);
+
+
     }
 
-    private void receiveBitfield() {
+    private void receiveBitfield() throws InterruptedException {
         // read bitfield
         PeerMessage res = conn.readMessage();
-        State.getNeighborById(neighbor.id).bitField = res.payload;
+        nbr.setBitfield(res.payload);
 
         // send our bitfield
-        conn.sendMessage(new PeerMessage(State.bitfieldSize, BITFIELD, State.us.bitField));
-        System.out.println("Exchanged bitfields with " + neighbor.id);
+        conn.sendMessage(new PeerMessage(BITFIELD, us.getBitfield()));
+        System.out.println("Exchanged bitfields with " + nbr.id);
     }
-
 }
