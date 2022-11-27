@@ -46,6 +46,7 @@ public class ChokeHelper {
    }
    //idk a good name for this, clears the unchoked array, the recreates it from neighbor list
    public void unchokeChoke(){
+       us.updateDownloadRate(P2P.pfm.numPieces);
        for(Neighbor p : nm.unchoked){
            //TODO send choke message
            //p.connection.sendMessage(new PeerMessage(0, PeerMessage.Type.CHOKE, Optional.empty()));

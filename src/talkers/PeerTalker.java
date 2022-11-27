@@ -89,7 +89,9 @@ public class PeerTalker implements Runnable {
         if (nbr.interested == INTERESTED) {
             us.pendingBitfield(i);
             System.out.println(us.id + " is requesting for " + i + " from " + nbr.id);
-            nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(i)));
+            if(!nm.unchoked.contains(nbr)) {
+                nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(i)));
+            }
         }
     }
 
@@ -144,7 +146,6 @@ public class PeerTalker implements Runnable {
         byte[] payload = new byte[payloadLen];
         System.arraycopy(msg.payload, 0, payload, 0, 4); // write index into payload
         System.arraycopy(piece, 0, payload, 4, piece.length); // write piece into payload
-
 
         nbr.connection.sendMessage(new PeerMessage(PIECE, payload));
     }

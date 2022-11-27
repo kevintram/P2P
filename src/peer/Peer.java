@@ -13,7 +13,7 @@ public class Peer {
     public boolean hasFile;
     private byte[] bitfield;
 
-    public double downloadRate; // this will be set to -1 UNLESS the file has completed download
+    public double downloadRate; // this will be set to -1 UNLESS a piece has been downloaded
 
     public Long startTime;
 
@@ -30,6 +30,17 @@ public class Peer {
 
     public void setDownloadRate(float rate){
         this.downloadRate = rate;
+    }
+
+    public void updateDownloadRate(int numPieces){
+        int counterDown = 0;
+        int buffer = (8 - (numPieces % 8));
+        for(int i = 0; i < bitfield.length-buffer; i++){
+            if(bitfield[i] == 1){
+                counterDown++;
+            }
+        }
+        this.downloadRate = counterDown / (System.nanoTime() - startTime);
     }
 
 
