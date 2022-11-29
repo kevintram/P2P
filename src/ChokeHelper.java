@@ -82,6 +82,10 @@ public class ChokeHelper {
        while(!found){
            if(nm.getNeighbors().get(index).interested == PeerMessage.Type.INTERESTED){
                nm.optimisticNeighbor = nm.getNeighbors().get(index);
+               found = true;
+           } else{
+               index = new Random().nextInt(nm.getNeighbors().size() - numPrefNeighbors);
+               index += numPrefNeighbors;
            }
        }
        nm.optimisticNeighbor.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
