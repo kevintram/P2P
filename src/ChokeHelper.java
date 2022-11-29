@@ -47,8 +47,7 @@ public class ChokeHelper {
    //idk a good name for this, clears the unchoked array, the recreates it from neighbor list
    public void unchokeChoke(){
        for(Neighbor p : nm.unchoked){
-           //TODO send choke message
-           //p.connection.sendMessage(new PeerMessage(0, PeerMessage.Type.CHOKE, Optional.empty()));
+           p.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, new byte[0]));
        }
        nm.unchoked.clear();
        if(!us.hasFile){
@@ -67,7 +66,6 @@ public class ChokeHelper {
            }
        }
        for(Neighbor p : nm.unchoked){
-           //TODO send unchoke message
            p.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
        }
    }
