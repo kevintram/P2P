@@ -125,7 +125,7 @@ public class PeerTalker implements Runnable {
                     int i = Util.byteArrToInt(msg.payload);
                     nbr.updateBitfield(i, pfm.numPieces);
 
-                    if (allNeighborsDone() && us.hasFile) { // terminate if everybody's done
+                    if (nm.allNeighborsDone() && us.hasFile) { // terminate if everybody's done
                         System.exit(0);
                     }
 
@@ -201,15 +201,6 @@ public class PeerTalker implements Runnable {
             Random random = new Random();
             return indices.get(random.nextInt(indices.size()));
         }
-    }
-
-    private boolean allNeighborsDone() {
-        for (Neighbor n : nm.getNeighbors()) {
-            if (!n.hasFile) {
-                return false;
-            }
-        }
-        return true;
     }
 
 }
