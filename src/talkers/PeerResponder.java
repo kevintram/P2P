@@ -8,6 +8,7 @@ import messages.Handshake;
 import messages.PeerMessage;
 import piece.PieceFileManager;
 
+import java.io.IOException;
 import java.net.Socket;
 
 import static messages.PeerMessage.Type.BITFIELD;

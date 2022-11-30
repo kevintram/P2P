@@ -73,7 +73,7 @@ public class PeerTalker implements Runnable {
         }
     }
 
-    private void sendBitfield() throws InterruptedException {
+    private void sendBitfield() throws InterruptedException{
 
         nbr.connection.sendMessage(new PeerMessage(BITFIELD, us.getBitfield()));
 
@@ -100,6 +100,11 @@ public class PeerTalker implements Runnable {
         // runs a loop check for if it receives a message, when it does so it will respond accordingly
         while (conn.getSocket().isConnected()) {
             PeerMessage msg = conn.readMessage();
+            // msg is only nothing if the connection is closed (I think). So, if the connection is closed, just leave.
+            if (msg.isNothing()) {
+                System.exit(0);
+            }
+
             switch (msg.type){
                 case CHOKE:
                     Logger.logChoke(us.id, nbr.id);
@@ -118,7 +123,12 @@ public class PeerTalker implements Runnable {
                 case HAVE:
                     Logger.logHave(us.id, nbr.id);
                     int i = Util.byteArrToInt(msg.payload);
-                    nbr.updateBitfield(i);
+                    nbr.updateBitfield(i, pfm.numPieces);
+
+                    if (allNeighborsDone() && us.hasFile) { // terminate if everybody's done
+                        System.exit(0);
+                    }
+
                     requestForPiecesIfInterested();
 
                     break;
@@ -158,15 +168,18 @@ public class PeerTalker implements Runnable {
         byte[] pieceContent = Arrays.copyOfRange(msg.payload, 4, msg.len);
 
         pfm.updatePieceFile(index, pieceContent);
-        us.updateBitfield(index);
+        us.updateBitfield(index, pfm.numPieces);
 
         Logger.logDownload(us.id, nbr.id, index);
         // send haves to neighbors
         for (Neighbor n : nm.getNeighbors()) {
                 n.connection.sendMessage(new PeerMessage(HAVE, Util.intToByteArr(index)));
         }
-        if(us.finishedFile(pfm.numPieces))
-            us.hasFile = true;
+
+        if(us.hasFile) {
+            Logger.logComplete(us.id);
+        }
+
         requestForPiecesIfInterested();
     }
 
@@ -188,6 +201,15 @@ public class PeerTalker implements Runnable {
             Random random = new Random();
             return indices.get(random.nextInt(indices.size()));
         }
+    }
+
+    private boolean allNeighborsDone() {
+        for (Neighbor n : nm.getNeighbors()) {
+            if (!n.hasFile) {
+                return false;
+            }
+        }
+        return true;
     }
 
 }

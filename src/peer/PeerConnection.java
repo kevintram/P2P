@@ -6,6 +6,7 @@ import messages.Util;
 import java.io.*;
 import java.net.ConnectException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 
 public class PeerConnection {
@@ -84,6 +85,8 @@ public class PeerConnection {
     public int read(byte[] buf, int len) {
         try {
             return in.read(buf, 0, len);
+        } catch (SocketException e) {
+            return -1;
         } catch (IOException e) {
             e.printStackTrace();
             return -1;

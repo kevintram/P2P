@@ -54,12 +54,17 @@ public class Peer {
         return temp;
     }
 
-    public void updateBitfield(int index) throws InterruptedException {
+    public void updateBitfield(int index, int numPieces) throws InterruptedException {
         if(lock.isWriteLocked())
             latch.await();
         lock.writeLock().lock();
         latch = new CountDownLatch(1);
         this.bitfield[index] = 1;
+        // we should really be doing this differently but idgaf
+        if (finishedFile(numPieces)) {
+            hasFile = true;
+        }
+
         lock.writeLock().unlock();
         latch.countDown();
     }
@@ -84,8 +89,7 @@ public class Peer {
         latch.countDown();
     }
 
-
-    public boolean finishedFile(int numPieces) {
+    private boolean finishedFile(int numPieces) {
         int buffer = (8 - (numPieces % 8));
         for(int i = 0; i < bitfield.length-buffer; i++){
             if(bitfield[i] == 0){
@@ -93,7 +97,6 @@ public class Peer {
             }
 
         }
-        Logger.logComplete(this.id);
         return true;
     }
 }
