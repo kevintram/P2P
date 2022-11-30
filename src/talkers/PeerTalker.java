@@ -100,8 +100,8 @@ public class PeerTalker implements Runnable {
         // runs a loop check for if it receives a message, when it does so it will respond accordingly
         while (conn.getSocket().isConnected()) {
             PeerMessage msg = conn.readMessage();
-            // msg is only nothing if the connection is closed (I think). So, if the connection is closed, just leave.
-            if (msg.isNothing()) {
+
+            if (msg == null) {
                 System.exit(0);
             }
 

@@ -94,18 +94,17 @@ public class PeerConnection {
     }
 
     public PeerMessage readMessage() {
-
         // get payload length
         byte[] lenBuf = new byte[4];
-        read(lenBuf, 4);
+        if (read(lenBuf, 4) == -1) return null;
         int len = Util.byteArrToInt(lenBuf);
         // get type
         byte[] typeBuf = new byte[1];
-        read(typeBuf, 1);
+        if (read(typeBuf, 1) == -1) return null;
         PeerMessage.Type type = PeerMessage.Type.values()[typeBuf[0]];
         // get payload
         byte[] payload = new byte[len];
-        read(payload, len);
+        if (read(payload, len) == - 1) return null;
 
         return new PeerMessage(type, payload);
     }

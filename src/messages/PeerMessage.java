@@ -29,10 +29,6 @@ public class PeerMessage {
         return res;
     }
 
-    public boolean isNothing() {
-        return len == 0 && type.equals(Type.CHOKE) && payload.length == 0;
-    }
-
     @Override
     public boolean equals(Object obj) {
         if (obj.getClass() == this.getClass()) {
