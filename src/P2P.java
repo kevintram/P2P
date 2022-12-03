@@ -1,4 +1,3 @@
-import logger.Logger;
 import neighbor.NeighborManager;
 import peer.Neighbor;
 import peer.Peer;
@@ -8,25 +7,21 @@ import talkers.*;
 import java.io.*;
 import java.net.ServerSocket;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 public class P2P {
     static PieceFileManager pfm;
     static NeighborManager nm;
     static Peer us;
     static ChokeHelper ch;
+
     public static void main(String[] args) throws IOException, InterruptedException {
         int id = Integer.parseInt(args[0]);
         System.out.format("Peer: %d \n", id);
-        initPeerInfoCfg(id);
-        parseCommonCfg();
+        initStuffFromPeerInfoCfg(id);
+        initStuffFromCommonCfg();
         startTalkingTo(nm.getNeighbors());
         startChokingThreads(nm.unchokeInterval, nm.optimInterval);
         waitForPeersToTalkToMe();
-
     }
 
     /**
@@ -34,7 +29,7 @@ public class P2P {
      * @param ourId
      * @throws IOException
      */
-    private static void initPeerInfoCfg(int ourId) throws IOException {
+    private static void initStuffFromPeerInfoCfg(int ourId) throws IOException {
         ArrayList<Neighbor> neighbors = new ArrayList<>();
 
         boolean foundUs = false;
@@ -72,7 +67,7 @@ public class P2P {
      * Sets all the attributes related to Common.cfg
      * @throws IOException
      */
-    private static void parseCommonCfg() throws IOException, InterruptedException {
+    private static void initStuffFromCommonCfg() throws IOException, InterruptedException {
         File file = new File("Common.cfg");
         BufferedReader br = new BufferedReader(new FileReader(file));
         String ss[];
@@ -126,7 +121,7 @@ public class P2P {
     public static void startTalkingTo(List<Neighbor> neighbors) {
         for (Neighbor neighbor : neighbors) {
             if (neighbor.id < us.id) {
-                new Thread(new PeerTalker(us, neighbor, pfm, nm), String.valueOf(neighbor.id) + " Talker").start();
+                new Thread(new PeerTalker(us, neighbor, pfm, nm), neighbor.id + " Talker").start();
             }
         }
     }
@@ -137,7 +132,7 @@ public class P2P {
             try {
                 // when a peer tries to connect to us, run a talkers.PeerResponder
                 while (true) {
-                    new Thread(new PeerResponder(server.accept(), us, pfm, nm), "Responder " + String.valueOf(nm.getNeighbors().size())).start();
+                    new Thread(new PeerResponder(server.accept(), us, pfm, nm), "Responder " + nm.getNeighbors().size()).start();
                 }
             } finally {
                 server.close();

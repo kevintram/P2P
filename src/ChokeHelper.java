@@ -13,6 +13,7 @@ public class ChokeHelper {
     public int unchokeInterval;
     public int optimisticInterval;
     NeighborManager nm;
+
     List<Neighbor> downloadList = new ArrayList<>();
     public ChokeHelper(NeighborManager nm, Peer us, int optimisticInterval, int unchokeInterval) {
         Timer time = new Timer();
@@ -25,8 +26,7 @@ public class ChokeHelper {
         time.schedule(ot, optimisticInterval * 1000);
     }
 
- //
-   //sorts by download rate, if 2 peers have same rate, 50/50 chance for order
+ //sorts by download rate, if 2 peers have same rate, 50/50 chance for order
    static class SortbyDownload implements Comparator<Peer> {
        public int compare(Peer a, Peer b){
            if(a.downloadRate == b.downloadRate){
