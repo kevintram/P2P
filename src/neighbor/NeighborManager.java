@@ -10,6 +10,9 @@ public class NeighborManager {
     private final HashMap<Integer, Neighbor> idToNeighbor = new HashMap<>();
     public List<Neighbor> unchoked = new ArrayList<>();
     public Neighbor optimisticNeighbor;
+    public int unchokeInterval;
+    public int optimInterval;
+    public int numPrefNeighbors;
 
     public NeighborManager(List<Neighbor> neighbors) {
         for (Neighbor n: neighbors) {

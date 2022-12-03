@@ -7,22 +7,20 @@ import talkers.*;
 import java.io.*;
 import java.net.ServerSocket;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class P2P {
     static PieceFileManager pfm;
     static NeighborManager nm;
     static Peer us;
+    static ChokeHelper ch;
 
     public static void main(String[] args) throws IOException, InterruptedException {
         int id = Integer.parseInt(args[0]);
         System.out.format("Peer: %d \n", id);
-        initPeerInfoCfg(id);
-        parseCommonCfg();
-
+        initStuffFromPeerInfoCfg(id);
+        initStuffFromCommonCfg();
         startTalkingTo(nm.getNeighbors());
+        startChokingThreads(nm.unchokeInterval, nm.optimInterval);
         waitForPeersToTalkToMe();
     }
 
@@ -31,7 +29,7 @@ public class P2P {
      * @param ourId
      * @throws IOException
      */
-    private static void initPeerInfoCfg(int ourId) throws IOException {
+    private static void initStuffFromPeerInfoCfg(int ourId) throws IOException {
         ArrayList<Neighbor> neighbors = new ArrayList<>();
 
         boolean foundUs = false;
@@ -61,25 +59,30 @@ public class P2P {
         nm = new NeighborManager(neighbors);
     }
 
+    private static void startChokingThreads(int unchokeInterval, int optimisticInterval) {
+        ch = new ChokeHelper(nm, us, optimisticInterval, unchokeInterval);
+    }
+
     /**
      * Sets all the attributes related to Common.cfg
      * @throws IOException
      */
-    private static void parseCommonCfg() throws IOException, InterruptedException {
+    private static void initStuffFromCommonCfg() throws IOException, InterruptedException {
         File file = new File("Common.cfg");
         BufferedReader br = new BufferedReader(new FileReader(file));
         String ss[];
 
         ss = br.readLine().split(" ");
         int numPrefNeighbors = Integer.parseInt(ss[1]);
-
+        nm.numPrefNeighbors = numPrefNeighbors;
         ss = br.readLine().split(" ");
         int unchokeInterval = Integer.parseInt(ss[1]);
 
         ss = br.readLine().split(" ");
         int optimisticInterval = Integer.parseInt(ss[1]);
 
-        startChokingThreads(unchokeInterval, optimisticInterval);
+        nm.optimInterval = optimisticInterval;
+        nm.unchokeInterval = unchokeInterval;
 
         ss = br.readLine().split(" ");
         String fileName = ss[1];
@@ -118,7 +121,7 @@ public class P2P {
     public static void startTalkingTo(List<Neighbor> neighbors) {
         for (Neighbor neighbor : neighbors) {
             if (neighbor.id < us.id) {
-                new Thread(new PeerTalker(us, neighbor, pfm, nm)).start();
+                new Thread(new PeerTalker(us, neighbor, pfm, nm), neighbor.id + " Talker").start();
             }
         }
     }
@@ -129,7 +132,7 @@ public class P2P {
             try {
                 // when a peer tries to connect to us, run a talkers.PeerResponder
                 while (true) {
-                    new Thread(new PeerResponder(server.accept(), us, pfm, nm)).start();
+                    new Thread(new PeerResponder(server.accept(), us, pfm, nm), "Responder " + nm.getNeighbors().size()).start();
                 }
             } finally {
                 server.close();
@@ -139,11 +142,4 @@ public class P2P {
         }
     }
 
-    private static void startChokingThreads(int unchokeInterval, int optimisticInterval) {
-        ChokeHelper ch = new ChokeHelper(nm, us);
-        ScheduledExecutorService choker = Executors.newScheduledThreadPool(1);
-        choker.scheduleAtFixedRate(ch.chokeUnchokeInterval, 0, unchokeInterval, TimeUnit.SECONDS);
-        ScheduledExecutorService optimChoker = Executors.newScheduledThreadPool(1);
-        optimChoker.scheduleAtFixedRate(ch.optimChokeUnchokeInterval, 0, optimisticInterval, TimeUnit.SECONDS);
-    }
 }
