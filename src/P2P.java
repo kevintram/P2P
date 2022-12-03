@@ -24,8 +24,9 @@ public class P2P {
         initPeerInfoCfg(id);
         parseCommonCfg();
         startTalkingTo(nm.getNeighbors());
-        waitForPeersToTalkToMe();
         startChokingThreads(nm.unchokeInterval, nm.optimInterval);
+        waitForPeersToTalkToMe();
+
     }
 
     /**

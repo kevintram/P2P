@@ -8,20 +8,21 @@ import java.util.*;
 
 public class ChokeHelper {
 
-    NeighborManager nm;
     Peer us;
     public int numPrefNeighbors;
     public int unchokeInterval;
     public int optimisticInterval;
-    public Runnable chokeUnchokeInterval;
-    Runnable optimChokeUnchokeInterval;
+    NeighborManager nm;
 
     public ChokeHelper(NeighborManager nm, Peer us, int optimisticInterval, int unchokeInterval) {
         Timer time = new Timer();
+        this.nm = nm;
+        this.us = us;
         ChokeUnchokeTask ct = new ChokeUnchokeTask();
         OptimeChokeTask ot = new OptimeChokeTask();
-        time.schedule(ct, unchokeInterval * 1000);
-        time.schedule(ot, optimisticInterval  * 1000);
+        System.out.println("choking start");
+        time.schedule(ct, unchokeInterval);
+        time.schedule(ot, optimisticInterval);
     }
 
  //
@@ -46,7 +47,7 @@ public class ChokeHelper {
    //idk a good name for this, clears the unchoked array, the recreates it from neighbor list
    public void unchokeChoke(){
        //us.updateDownloadRate(P2P.pfm.numPieces);
-       for(Neighbor p : nm.unchoked){
+       for(Neighbor p : P2P.nm.unchoked){
            Logger.logChoke(p.id, us.id);
            p.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, new byte[0]));
        }

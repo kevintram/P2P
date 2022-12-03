@@ -89,7 +89,8 @@ public class PeerTalker implements Runnable {
         if (nbr.interested == INTERESTED) {
             us.pendingBitfield(i);
             System.out.println(us.id + " is requesting for " + i + " from " + nbr.id);
-            nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(i)));
+            if(nbr.canDown)
+                nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(i)));
         }
     }
 
