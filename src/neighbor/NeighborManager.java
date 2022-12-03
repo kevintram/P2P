@@ -37,9 +37,9 @@ public class NeighborManager {
         return true;
     }
 
-    public boolean haveAllConnections() {
+    public boolean haveAllBitfields() {
         for (Neighbor n : idToNeighbor.values()) {
-            if (n.connection == null) {
+            if (n.bitfield == null) {
                 return false;
             }
         }

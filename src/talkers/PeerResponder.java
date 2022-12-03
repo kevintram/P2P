@@ -8,7 +8,6 @@ import messages.Handshake;
 import messages.PeerMessage;
 import piece.PieceFileManager;
 
-import java.io.IOException;
 import java.net.Socket;
 
 import static messages.PeerMessage.Type.BITFIELD;
@@ -26,11 +25,11 @@ public class PeerResponder extends PeerTalker {
 
     @Override
     protected void start() throws InterruptedException {
-        receiveHandshake();
-        receiveBitfield();
+        receiveAndSendHandshake();
+        receiveAndSendBitfield();
     }
 
-    private void receiveHandshake() {
+    private void receiveAndSendHandshake() {
         // read handshake
         byte[] buf = new byte[32];
         conn.read(buf, 32);
@@ -44,10 +43,10 @@ public class PeerResponder extends PeerTalker {
         Logger.logConnectionEstablished(us.id, nbr.id);
     }
 
-    private void receiveBitfield() throws InterruptedException {
+    private void receiveAndSendBitfield() throws InterruptedException {
         // read bitfield
-        PeerMessage res = conn.readMessage();
-        nbr.setBitfield(res.payload);
+        PeerMessage msg = conn.readMessage();
+        nbr.setBitfield(msg.payload);
 
         // send our bitfield
         conn.sendMessage(new PeerMessage(BITFIELD, us.getBitfield()));

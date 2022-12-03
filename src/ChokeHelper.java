@@ -1,4 +1,3 @@
-import logger.Logger;
 import messages.PeerMessage;
 import neighbor.NeighborManager;
 import peer.Neighbor;
@@ -18,7 +17,7 @@ public class ChokeHelper {
         this.us = us;
         this.numPrefNeighbors = nm.numPrefNeighbors;
 
-        while (!nm.haveAllConnections()) {} // wait until all connections are established
+        while (!nm.haveAllBitfields()) {} // wait until all connections are established
 
         ChokeUnchokeTask ct = new ChokeUnchokeTask();
         OptimChokeTask ot = new OptimChokeTask();

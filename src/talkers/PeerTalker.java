@@ -40,7 +40,7 @@ public class PeerTalker implements Runnable {
     public void run() {
         try {
             start();
-            while (!nm.haveAllConnections()) {} // wait until all connections are established
+            while (!nm.haveAllBitfields()) {} // wait until all connections are established
             updateAndSendInterest();
             waitForMessages();
         } catch (InterruptedException e) {
@@ -51,18 +51,11 @@ public class PeerTalker implements Runnable {
     protected void start() throws InterruptedException {
         Logger.logMakeConnection(us.id, nbr.id);
         nbr.connection = new PeerConnection(nbr.hostName, nbr.port);
-        Logger.logConnectionEstablished(us.id, nbr.id);
-        sendHandshake();
-        //TODO figure out how we should actually handle this
-        try {
-            sendBitfield();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
+        sendAndReceiveHandshake();
+        sendAndReceiveBitfield();
     }
 
-    private void sendHandshake() {
+    private void sendAndReceiveHandshake() {
         // send a handshake
         nbr.connection.send(new Handshake(us.id).toByteArray());
 
@@ -76,11 +69,18 @@ public class PeerTalker implements Runnable {
         }
     }
 
-    private void sendBitfield() throws InterruptedException {
+    private void sendAndReceiveBitfield() throws InterruptedException {
+        System.out.println(us.id + " IS SENDING BITFIELD TO " + nbr.id);
         nbr.connection.sendMessage(new PeerMessage(BITFIELD, us.getBitfield()));
 
-        PeerMessage res = nbr.connection.readMessage();
-        nbr.setBitfield(res.payload);
+        PeerMessage msg = nbr.connection.readMessage();
+
+        if (msg.type != BITFIELD) {
+            System.out.println("WE SHOULD'VE GOTTEN A BITFIELD!! BUT WE GOT A " + msg.type);
+            System.exit(-1);
+        }
+
+        nbr.setBitfield(msg.payload);
     }
 
     private void updateAndSendInterest() throws InterruptedException {
@@ -106,7 +106,7 @@ public class PeerTalker implements Runnable {
         } else {
             piece = pending;
         }
-
+        System.out.println(us.id + " REQUESTING FOR PIECE " + piece + " FROM " + nbr.id);
         nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(piece)));
     }
 
@@ -157,7 +157,9 @@ public class PeerTalker implements Runnable {
 
                     break;
                 case BITFIELD:
-                    throw new RuntimeException("ERROR!:" + us.id + " received a bitfield message from " + nbr.id + " (we shouldn't have)");
+                    System.out.println("ERROR!:" + us.id + " received a bitfield message from " + nbr.id + " (we shouldn't have)");
+                    System.exit(-1);
+                    break;
                 case REQUEST:
                     respondToRequestMsg(msg);
                     break;
