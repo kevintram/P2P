@@ -70,7 +70,6 @@ public class PeerTalker implements Runnable {
     }
 
     private void sendAndReceiveBitfield() throws InterruptedException {
-        System.out.println(us.id + " IS SENDING BITFIELD TO " + nbr.id);
         nbr.connection.sendMessage(new PeerMessage(BITFIELD, us.getBitfield()));
 
         PeerMessage msg = nbr.connection.readMessage();
@@ -106,7 +105,6 @@ public class PeerTalker implements Runnable {
         } else {
             piece = pending;
         }
-        System.out.println(us.id + " REQUESTING FOR PIECE " + piece + " FROM " + nbr.id);
         nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(piece)));
     }
 

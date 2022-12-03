@@ -1,9 +1,11 @@
+import logger.Logger;
 import messages.PeerMessage;
 import neighbor.NeighborManager;
 import peer.Neighbor;
 import peer.Peer;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 public class ChokeHelper {
 
@@ -84,6 +86,13 @@ public class ChokeHelper {
        }
 
        nm.unchoked = newUnchoked;
+
+       int[] arr = new int[numPrefNeighbors];
+       for (int i = 0; i < numPrefNeighbors; i++) {
+           arr[i] = nm.unchoked.get(i).id;
+       }
+
+       Logger.logChangeNeighbors(us.id, arr);
    }
 
     public class OptimChokeTask extends TimerTask {
@@ -95,21 +104,22 @@ public class ChokeHelper {
     }
 
    public void optimChokeUnchoke() {
-       if (nm.optimNbr != null) {
-           nm.optimNbr.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, new byte[0]));
-       }
-       int index = new Random().nextInt(nm.getNeighbors().size());
-
-       //guarantees the index wont be a part of unchoked because Neighbors array is sorted
-       while(nm.unchoked.contains(nm.getNeighbors().get(index))) {
+        int index = new Random().nextInt(nm.getNeighbors().size());
+        //guarantees the index won't be a part of unchoked because Neighbors array is sorted
+        while(nm.unchoked.contains(nm.getNeighbors().get(index))) {
            index = new Random().nextInt(nm.getNeighbors().size());
-       }
+        }
 
-       nm.optimNbr = nm.getNeighbors().get(index);
+        Neighbor newOptimNbr = nm.getNeighbors().get(index);
 
-       if (nm.optimNbr != null) {
-           nm.optimNbr.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
-       }
+        if (newOptimNbr != nm.optimNbr) { // if a new neighbor
+           newOptimNbr.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
+           Logger.logOptChangeNeighbor(us.id, newOptimNbr.id);
+        } else {
+           nm.optimNbr.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, new byte[0]));
+        }
+
+        nm.optimNbr = newOptimNbr;
    }
 
    public static Long getTime(){

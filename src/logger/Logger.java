@@ -3,6 +3,7 @@ package logger;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.util.ArrayList;
 
 public class Logger {
     public static String getTime() {
@@ -33,10 +34,11 @@ public class Logger {
      */
     public static void logChangeNeighbors(int hostID, int[] peerIDs){
         System.out.format("[%s]: Peer [%d] has the preferred neighbors [", getTime(), hostID);
+        ArrayList<String> temp = new ArrayList<>();
         for(int id : peerIDs){
-            System.out.format("%d",id);
+            temp.add(String.valueOf(id));
         }
-        System.out.format("]%n");
+        System.out.format(String.join(",", temp) + "]%n");
     }
 
     /**
@@ -54,7 +56,7 @@ public class Logger {
      * @param p2ID Peer.Peer unchoking
      */
     public static void logUnchoke(int p1ID, int p2ID){
-        //System.out.format("[%s]: Peer [%d] is unchoked by [%d]%n", getTime(), p1ID, p2ID);
+        System.out.format("[%s]: Peer [%d] is unchoked by [%d]%n", getTime(), p1ID, p2ID);
     }
 
     /**
@@ -63,7 +65,7 @@ public class Logger {
      * @param p2ID peer doing the choking
      */
     public static void logChoke(int p1ID, int p2ID){
-        //System.out.format("[%s]: Peer [%d] is choked by [%d]%n", getTime(), p1ID, p2ID);
+        System.out.format("[%s]: Peer [%d] is choked by [%d]%n", getTime(), p1ID, p2ID);
     }
 
     /**
@@ -72,7 +74,7 @@ public class Logger {
      * @param peerID peer that is interested
      */
     public static void logInterest(int hostID, int peerID){
-        //System.out.format("[%s]: Peer [%d] received the 'interested' message from [%d]%n", getTime(), hostID, peerID);
+        System.out.format("[%s]: Peer [%d] received the 'interested' message from [%d]%n", getTime(), hostID, peerID);
     }
 
 
@@ -82,7 +84,7 @@ public class Logger {
      * @param peerID peer that is not interested
      */
     public static void logNotInterest(int hostID, int peerID){
-       //System.out.format("[%s]: Peer [%d] received the 'not interested' message from [%d]%n", getTime(), hostID, peerID);
+       System.out.format("[%s]: Peer [%d] received the 'not interested' message from [%d]%n", getTime(), hostID, peerID);
     }
 
     /**
@@ -91,7 +93,7 @@ public class Logger {
      * @param peerID peer sending have
      */
     public static void logHave(int hostID, int peerID) {
-        //System.out.format("[%s]: Peer [%d] received the 'have' message from [%d]%n", getTime(), hostID, peerID);
+        System.out.format("[%s]: Peer [%d] received the 'have' message from [%d]%n", getTime(), hostID, peerID);
     }
 
 
@@ -102,7 +104,7 @@ public class Logger {
      * @param pieceIndex index of piece being downloaded
      */
     public static void logDownload(int hostID, int peerID, int pieceIndex){
-        //System.out.format("[%s]: Peer [%d] has downloaded the piece [%d] from [%d]%n", getTime(), hostID, pieceIndex, peerID);
+        System.out.format("[%s]: Peer [%d] has downloaded the piece [%d] from [%d]%n", getTime(), hostID, pieceIndex, peerID);
     }
 
     /**
@@ -110,6 +112,6 @@ public class Logger {
      * @param hostID local peer
      */
     public static void logComplete(int hostID){
-        //System.out.format("[%s]: Peer [%d] has downloaded the complete file%n", getTime(), hostID);
+        System.out.format("[%s]: Peer [%d] has downloaded the complete file%n", getTime(), hostID);
     }
 }
