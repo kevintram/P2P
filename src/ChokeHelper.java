@@ -13,16 +13,16 @@ public class ChokeHelper {
     public int unchokeInterval;
     public int optimisticInterval;
     NeighborManager nm;
-
+    List<Neighbor> downloadList = new ArrayList<>();
     public ChokeHelper(NeighborManager nm, Peer us, int optimisticInterval, int unchokeInterval) {
         Timer time = new Timer();
         this.nm = nm;
         this.us = us;
+        this.numPrefNeighbors = nm.numPrefNeighbors;
         ChokeUnchokeTask ct = new ChokeUnchokeTask();
         OptimeChokeTask ot = new OptimeChokeTask();
-        System.out.println("choking start");
-        time.schedule(ct, unchokeInterval);
-        time.schedule(ot, optimisticInterval);
+        time.schedule(ct, unchokeInterval * 1000);
+        time.schedule(ot, optimisticInterval * 1000);
     }
 
  //
@@ -40,6 +40,7 @@ public class ChokeHelper {
 
         @Override
         public void run() {
+            System.out.println("ChokeTask");
             unchokeChoke();
         }
     }
@@ -54,19 +55,21 @@ public class ChokeHelper {
        nm.unchoked.clear();
        if(!us.hasFile){
            //sorts neighbors by download rate, and picks the top n
-           int left = numPrefNeighbors;
-           Collections.sort(nm.getNeighbors(), new SortbyDownload());
-           nm.unchoked = nm.getNeighbors().subList(0, numPrefNeighbors);
+           downloadList = nm.getNeighbors();
+           Collections.sort(downloadList, new SortbyDownload());
+           nm.unchoked = downloadList.subList(0, numPrefNeighbors);
            for(Neighbor nbr : nm.getNeighbors()){
                nbr.downloadRate = 0;
            }
        } else {
            //picks random neighbors to unchoke
            int[] index = new int[numPrefNeighbors];
+           System.out.println("index size: " + numPrefNeighbors);
            for(int i = 0; i < numPrefNeighbors; i++){
                index[i] = new Random().nextInt(nm.getNeighbors().size());
            }
            for(int i : index){
+               System.out.println("adding: " + i);
                nm.unchoked.add(nm.getNeighbors().get(i));
            }
        }
@@ -79,6 +82,7 @@ public class ChokeHelper {
 
         @Override
         public void run() {
+            System.out.println("OptiChokeTask");
             optimChokeUnchoke();
         }
     }
@@ -88,14 +92,11 @@ public class ChokeHelper {
            Logger.logChoke(nm.optimisticNeighbor.id, us.id);
            nm.optimisticNeighbor.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, new byte[0]));
        }
-       int index = new Random().nextInt(nm.getNeighbors().size() - numPrefNeighbors);
-       index += numPrefNeighbors;
-       boolean found = false;
-       while(!found){
-           if(nm.getNeighbors().get(index).interested == PeerMessage.Type.INTERESTED){
-               nm.optimisticNeighbor = nm.getNeighbors().get(index);
-           }
-       }
+       int index = new Random().nextInt(nm.getNeighbors().size());
+       //guarantees the index wont be a part of unchoked because Neighbors array is sorted
+       while(nm.unchoked.contains(nm.getNeighbors().get(index)))
+           index = new Random().nextInt(nm.getNeighbors().size());
+       nm.optimisticNeighbor = nm.getNeighbors().get(index);
        Logger.logUnchoke(nm.optimisticNeighbor.id, us.id);
        nm.optimisticNeighbor.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
    }

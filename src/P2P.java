@@ -79,7 +79,7 @@ public class P2P {
 
         ss = br.readLine().split(" ");
         int numPrefNeighbors = Integer.parseInt(ss[1]);
-
+        nm.numPrefNeighbors = numPrefNeighbors;
         ss = br.readLine().split(" ");
         int unchokeInterval = Integer.parseInt(ss[1]);
 

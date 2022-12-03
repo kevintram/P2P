@@ -12,6 +12,7 @@ public class NeighborManager {
     public Neighbor optimisticNeighbor;
     public int unchokeInterval;
     public int optimInterval;
+    public int numPrefNeighbors;
 
     public NeighborManager(List<Neighbor> neighbors) {
         for (Neighbor n: neighbors) {
