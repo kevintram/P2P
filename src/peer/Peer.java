@@ -53,13 +53,13 @@ public class Peer {
         return temp;
     }
 
-    public void setDownloaded(int index, int numPieces) throws InterruptedException {
+    public void updateBitField(int index, byte value, int numPieces) throws InterruptedException {
         if(lock.isWriteLocked())
             latch.await();
         lock.writeLock().lock();
         latch = new CountDownLatch(1);
 
-        this.bitfield[index] = 1;
+        this.bitfield[index] = value;
 
         // we should really be doing this differently but idgaf
         if (finishedFile(numPieces)) {
@@ -77,18 +77,6 @@ public class Peer {
         latch = new CountDownLatch(1);
 
         this.bitfield = newField;
-
-        lock.writeLock().unlock();
-        latch.countDown();
-    }
-
-    public void setPending(int index) throws InterruptedException {
-        if(lock.isWriteLocked())
-            latch.await();
-        lock.writeLock().lock();
-        latch = new CountDownLatch(1);
-
-        this.bitfield[index] = -1;
 
         lock.writeLock().unlock();
         latch.countDown();
