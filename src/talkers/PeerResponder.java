@@ -35,15 +35,13 @@ public class PeerResponder extends PeerTalker {
         byte[] buf = new byte[32];
         conn.read(buf, 32);
         Handshake handshake = new Handshake(buf);
-        nm.getNeighborById(handshake.id).connection = conn;
-        nm.getNeighborById(handshake.id).isInit = true;
+
         nbr = nm.getNeighborById(handshake.id);
+        nbr.connection = conn;
 
         // send back handshake
         conn.send(new Handshake(us.id).toByteArray());
         Logger.logConnectionEstablished(us.id, nbr.id);
-
-
     }
 
     private void receiveBitfield() throws InterruptedException {
@@ -53,6 +51,5 @@ public class PeerResponder extends PeerTalker {
 
         // send our bitfield
         conn.sendMessage(new PeerMessage(BITFIELD, us.getBitfield()));
-        System.out.println("Exchanged bitfields with " + nbr.id);
     }
 }

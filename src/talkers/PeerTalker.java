@@ -26,6 +26,9 @@ public class PeerTalker implements Runnable {
     protected PieceFileManager pfm;
     protected NeighborManager nm;
 
+    private int pending = -1;
+    private boolean interested = false;
+
     public PeerTalker(Peer us, Neighbor nbr, PieceFileManager pfm, NeighborManager nm) {
         this.us = us;
         this.nbr = nbr;
@@ -37,8 +40,8 @@ public class PeerTalker implements Runnable {
     public void run() {
         try {
             start();
-            for(Neighbor nbr : nm.unchoked);
-                requestForPiecesIfInterested();
+            while (!nm.haveAllConnections()) {} // wait until all connections are established
+            checkAndSendInterest();
             waitForMessages();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -68,32 +71,46 @@ public class PeerTalker implements Runnable {
         nbr.connection.read(res, 32);
 
         // check if response is right
-        if (new Handshake(res).equals(new Handshake(nbr.id))) {
-            System.out.println("Shook hands with " + nbr.id);
+        if (!(new Handshake(res).equals(new Handshake(nbr.id)))) {
+            throw new RuntimeException("Handshake with " + nbr.id + "did not match");
         }
     }
 
     private void sendBitfield() throws InterruptedException {
-        System.out.println("Sending Bitfield");
         nbr.connection.sendMessage(new PeerMessage(BITFIELD, us.getBitfield()));
 
         PeerMessage res = nbr.connection.readMessage();
         nbr.setBitfield(res.payload);
     }
-    private int checkInterest() throws InterruptedException {
-        int i = getNewRandomPieceFrom(nbr.getBitfield());
-        if(i != -1) nbr.setInterested(INTERESTED);
-        else nbr.setInterested(NOT_INTERESTED);
-        return i;
+
+    private void checkAndSendInterest() throws InterruptedException {
+        boolean newInterested = getNewRandomPieceFrom(nbr.getBitfield()) != -1;
+        if (interested != newInterested) {
+            nbr.connection.sendMessage(new PeerMessage((newInterested)? INTERESTED : NOT_INTERESTED, new byte[0]));
+        }
+        interested = newInterested;
     }
 
-    protected void requestForPiecesIfInterested() throws InterruptedException {
-        int i = checkInterest();
-        if (nbr.interested == INTERESTED) {
-            us.pendingBitfield(i);
-            System.out.println(us.id + " is requesting for " + i + " from " + nbr.id);
-            if(nbr.canDown)
-                nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(i)));
+    protected void sendRequest() throws InterruptedException {
+        checkAndSendInterest();
+        if (interested) {
+            int piece;
+            if (pending == -1) { // if nothing is pending
+                piece = getNewRandomPieceFrom(nbr.getBitfield());
+                if (piece == -1) {
+                    System.out.println("NO NEW PIECES FROM " + nbr.id + " EVEN THO WE'RE (" + us.id + ") INTERESTED");
+                    System.out.println("OUR (" + us.id +  ") BITFIELD: " + Arrays.toString(us.getBitfield()));
+                    System.out.println("THEIR(" + nbr.id +  ") BITFIELD: " + Arrays.toString(us.getBitfield()));
+                    System.exit(-1);
+                }
+                us.setPending(piece);
+                pending = piece;
+            } else {
+                piece = pending;
+            }
+
+            System.out.println(us.id + " is requesting for " + piece + " from " + nbr.id);
+            nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(piece)));
         }
     }
 
@@ -103,45 +120,36 @@ public class PeerTalker implements Runnable {
         while (conn.getSocket().isConnected()) {
             PeerMessage msg = conn.readMessage();
 
-            if (msg == null) {
+            if (msg == null) { // we just leave if we read bad
+                leaveIfEverybodyDone();
+                System.out.println("SOMEONE LEFT BUT " + us.id + " IS NOT DONE");
+                System.out.println(us.id + " MY BITFIELD IS " + Arrays.toString(us.bitfield));
                 System.exit(0);
             }
 
             switch (msg.type){
                 case CHOKE:
-                    //if choke, I cant download, dont request
-                    nbr.canDown = false;
                     Logger.logChoke(us.id, nbr.id);
                     break;
                 case UNCHOKE:
-                    //if unchoke, I can download
-                    nbr.canDown = true;
                     Logger.logUnchoke(us.id, nbr.id);
-                    requestForPiecesIfInterested();
+                    sendRequest();
                     break;
                 case INTERESTED:
-                    nbr.interested = INTERESTED;
                     Logger.logInterest(us.id, nbr.id);
                     break;
                 case NOT_INTERESTED:
-                    nbr.interested = NOT_INTERESTED;
                     Logger.logNotInterest(us.id, nbr.id);
                     break;
                 case HAVE:
                     Logger.logHave(us.id, nbr.id);
                     int i = Util.byteArrToInt(msg.payload);
-                    nbr.updateBitfield(i, pfm.numPieces);
-
-                    if (nm.allNeighborsDone() && us.hasFile) { // terminate if everybody's done
-                        System.exit(0);
-                    }
-
-                    checkInterest();
-                    if(nbr.canDown)
-                        requestForPiecesIfInterested();
+                    nbr.setDownloaded(i, pfm.numPieces);
+                    leaveIfEverybodyDone();
+                    sendRequest();
                     break;
                 case BITFIELD:
-                    throw new RuntimeException("Received a bitfield message from " + nbr.id + " (we shouldn't have)");
+                    throw new RuntimeException("ERROR!:" + us.id + " received a bitfield message from " + nbr.id + " (we shouldn't have)");
                 case REQUEST:
                     respondToRequestMsg(msg);
                     break;
@@ -155,17 +163,20 @@ public class PeerTalker implements Runnable {
     }
 
     private void respondToRequestMsg(PeerMessage msg) throws InterruptedException {
-        // for now, just gonna pretend nobody is choked
         int pieceIndex = Util.byteArrToInt(msg.payload);
         System.out.println(us.id + " got request for " + pieceIndex + " from " + nbr.id);
         byte[] piece = pfm.getByteArrOfPiece(pieceIndex);
 
-        int payloadLen = 4 + piece.length;
-        byte[] payload = new byte[payloadLen];
-        System.arraycopy(msg.payload, 0, payload, 0, 4); // write index into payload
-        System.arraycopy(piece, 0, payload, 4, piece.length); // write piece into payload
-        nbr.downloadRate++;
-        nbr.connection.sendMessage(new PeerMessage(PIECE, payload));
+        if (nm.unchoked.contains(nbr) || nbr == nm.optimNbr) { // only give them a piece if they're unchoked
+            int payloadLen = 4 + piece.length;
+            byte[] payload = new byte[payloadLen];
+            System.arraycopy(msg.payload, 0, payload, 0, 4); // write index into payload
+            System.arraycopy(piece, 0, payload, 4, piece.length); // write piece into payload
+            nbr.downloadRate++;
+            nbr.connection.sendMessage(new PeerMessage(PIECE, payload));
+        } else {
+            System.out.println("BUT FUCK YOU " + nbr.id + "! BITCH YOU CHOKED!");
+        }
     }
 
     private void respondToPieceMsg(PeerMessage msg) throws InterruptedException {
@@ -175,21 +186,24 @@ public class PeerTalker implements Runnable {
 
         byte[] pieceContent = Arrays.copyOfRange(msg.payload, 4, msg.len);
 
-        pfm.updatePieceFile(index, pieceContent);
-        us.updateBitfield(index, pfm.numPieces);
+        if (us.getBitfield()[index] != 1) { // if we don't have this piece yet
+            pfm.updatePieceFile(index, pieceContent);
+            us.setDownloaded(index, pfm.numPieces);
+            if (pending != -1) pending = -1;
 
-        Logger.logDownload(us.id, nbr.id, index);
-        // send haves to neighbors
-        for (Neighbor n : nm.getNeighbors()) {
-            if(n.isInit)
+            Logger.logDownload(us.id, nbr.id, index);
+            // send haves to neighbors
+            for (Neighbor n : nm.getNeighbors()) {
                 n.connection.sendMessage(new PeerMessage(HAVE, Util.intToByteArr(index)));
+            }
+
+            if(us.hasFile) {
+                Logger.logComplete(us.id);
+                leaveIfEverybodyDone();
+            }
         }
 
-        if(us.hasFile) {
-            Logger.logComplete(us.id);
-        }
-
-        requestForPiecesIfInterested();
+        sendRequest();
     }
 
     /**
@@ -209,6 +223,13 @@ public class PeerTalker implements Runnable {
         } else {
             Random random = new Random();
             return indices.get(random.nextInt(indices.size()));
+        }
+    }
+
+    private void leaveIfEverybodyDone() {
+        if (nm.allNeighborsDone() && us.hasFile) {
+            System.out.println(us.id + " IS FUCKING DONE AND LEAVING");
+            System.exit(0);
         }
     }
 

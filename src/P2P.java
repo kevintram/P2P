@@ -20,8 +20,8 @@ public class P2P {
         initStuffFromPeerInfoCfg(id);
         initStuffFromCommonCfg();
         startTalkingTo(nm.getNeighbors());
+        waitForPeersToTalkToMe(nm.getNeighbors());
         startChokingThreads(nm.unchokeInterval, nm.optimInterval);
-        waitForPeersToTalkToMe();
     }
 
     /**
@@ -126,13 +126,15 @@ public class P2P {
         }
     }
 
-    public static void waitForPeersToTalkToMe() {
+    public static void waitForPeersToTalkToMe(List<Neighbor> neighbors) {
         try {
             ServerSocket server = new ServerSocket(us.port);
             try {
                 // when a peer tries to connect to us, run a talkers.PeerResponder
-                while (true) {
-                    new Thread(new PeerResponder(server.accept(), us, pfm, nm), "Responder " + nm.getNeighbors().size()).start();
+                for (Neighbor neighbor : neighbors) {
+                    if (neighbor.id > us.id) {
+                        new Thread(new PeerResponder(server.accept(), us, pfm, nm), "Responder " + nm.getNeighbors().size()).start();
+                    }
                 }
             } finally {
                 server.close();

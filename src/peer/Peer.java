@@ -1,8 +1,5 @@
 package peer;
 
-import logger.Logger;
-import piece.PieceFileManager;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -11,7 +8,7 @@ public class Peer {
     public final String hostName;
     public final int port;
     public boolean hasFile;
-    private byte[] bitfield;
+    public byte[] bitfield;
 
     public double downloadRate; // this will be set to -1 UNLESS a piece has been downloaded
 
@@ -49,17 +46,21 @@ public class Peer {
         //to ensure a read happens after a write, lock until writer done
         if(lock.isWriteLocked())
             latch.await();
+
         byte [] temp = bitfield;
+
         lock.readLock().unlock();
         return temp;
     }
 
-    public void updateBitfield(int index, int numPieces) throws InterruptedException {
+    public void setDownloaded(int index, int numPieces) throws InterruptedException {
         if(lock.isWriteLocked())
             latch.await();
         lock.writeLock().lock();
         latch = new CountDownLatch(1);
+
         this.bitfield[index] = 1;
+
         // we should really be doing this differently but idgaf
         if (finishedFile(numPieces)) {
             hasFile = true;
@@ -74,17 +75,21 @@ public class Peer {
             latch.await();
         lock.writeLock().lock();
         latch = new CountDownLatch(1);
+
         this.bitfield = newField;
+
         lock.writeLock().unlock();
         latch.countDown();
     }
 
-    public void pendingBitfield(int index) throws InterruptedException {
+    public void setPending(int index) throws InterruptedException {
         if(lock.isWriteLocked())
             latch.await();
         lock.writeLock().lock();
         latch = new CountDownLatch(1);
+
         this.bitfield[index] = -1;
+
         lock.writeLock().unlock();
         latch.countDown();
     }
@@ -92,7 +97,7 @@ public class Peer {
     private boolean finishedFile(int numPieces) {
         int buffer = (8 - (numPieces % 8));
         for(int i = 0; i < bitfield.length-buffer; i++){
-            if(bitfield[i] == 0){
+            if(bitfield[i] == 0 || bitfield[i] == -1){
                 return false;
             }
 

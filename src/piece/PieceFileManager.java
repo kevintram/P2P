@@ -57,7 +57,6 @@ public class PieceFileManager {
             }
             if (complete) {
                 combine(fileName);
-                // logger.Logger.logComplete(us.id);
             }
         }));
     }

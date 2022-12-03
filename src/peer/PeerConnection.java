@@ -69,6 +69,7 @@ public class PeerConnection {
             out.flush();
         } catch (IOException e) {
             e.printStackTrace();
+            System.exit(-1);
         }
     }
 
