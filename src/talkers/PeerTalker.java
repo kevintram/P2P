@@ -181,10 +181,10 @@ public class PeerTalker implements Runnable {
         }
         if(us.finishedFile(pfm.numPieces))
             us.hasFile = true;
-            for(Neighbor n : nm.getNeighbors()){
-                if(n.isInit)
-                    n.connection.sendMessage(new PeerMessage(NOT_INTERESTED, new byte[0]));
-            }
+       //    for(Neighbor n : nm.getNeighbors()){
+       //        if(n.isInit)
+       //            n.connection.sendMessage(new PeerMessage(NOT_INTERESTED, new byte[0]));
+       //    }
         requestForPiecesIfInterested();
     }
 

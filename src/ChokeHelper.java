@@ -119,7 +119,6 @@ public class ChokeHelper {
            }
        }
        if(!cont) {
-
            if(us.hasFile && nm.optimisticNeighbor != null)
                System.exit(1);
            return;
