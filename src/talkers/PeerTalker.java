@@ -126,7 +126,10 @@ public class PeerTalker implements Runnable {
                     Logger.logHave(us.id, nbr.id);
                     int i = Util.byteArrToInt(msg.payload);
                     nbr.updateBitfield(i);
-                    checkInterest();
+                    if(us.getBitfield()[i] == 0){
+                        nbr.setInterested(INTERESTED);
+                    }
+                    //checkInterest();
                     if(nbr.canDown)
                         requestForPiecesIfInterested();
                     break;
@@ -176,6 +179,10 @@ public class PeerTalker implements Runnable {
         }
         if(us.finishedFile(pfm.numPieces))
             us.hasFile = true;
+            for(Neighbor n : nm.getNeighbors()){
+                if(n.isInit)
+                    n.connection.sendMessage(new PeerMessage(NOT_INTERESTED, new byte[0]));
+            }
         requestForPiecesIfInterested();
     }
 
