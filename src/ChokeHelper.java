@@ -40,7 +40,6 @@ public class ChokeHelper {
 
         @Override
         public void run() {
-            System.out.println("ChokeTask for peer " + us.id);
             unchokeChoke();
         }
     }
@@ -92,7 +91,6 @@ public class ChokeHelper {
 
         @Override
         public void run() {
-            System.out.println("OptiChokeTask for peer " + us.id);
             optimChokeUnchoke();
         }
     }

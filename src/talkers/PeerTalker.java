@@ -107,7 +107,6 @@ public class PeerTalker implements Runnable {
             piece = pending;
         }
 
-        System.out.println(us.id + " is requesting for " + piece + " from " + nbr.id);
         nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(piece)));
     }
 
@@ -173,7 +172,6 @@ public class PeerTalker implements Runnable {
 
     private void respondToRequestMsg(PeerMessage msg) throws InterruptedException {
         int pieceIndex = Util.byteArrToInt(msg.payload);
-        System.out.println(us.id + " got request for " + pieceIndex + " from " + nbr.id);
         byte[] piece = pfm.getByteArrOfPiece(pieceIndex);
 
         if (nm.unchoked.contains(nbr) || nbr == nm.optimNbr) { // only give them a piece if they're unchoked
@@ -183,8 +181,6 @@ public class PeerTalker implements Runnable {
             System.arraycopy(piece, 0, payload, 4, piece.length); // write piece into payload
             nbr.downloadRate++;
             nbr.connection.sendMessage(new PeerMessage(PIECE, payload));
-        } else {
-            System.out.println("BUT FUCK YOU " + nbr.id + "! BITCH YOU CHOKED!");
         }
     }
 

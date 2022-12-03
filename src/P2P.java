@@ -16,7 +16,6 @@ public class P2P {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         int id = Integer.parseInt(args[0]);
-        System.out.format("Peer: %d \n", id);
         initStuffFromPeerInfoCfg(id);
         initStuffFromCommonCfg();
         startTalkingTo(nm.getNeighbors());
