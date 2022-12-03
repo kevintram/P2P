@@ -1,3 +1,4 @@
+import logger.Logger;
 import neighbor.NeighborManager;
 import peer.Neighbor;
 import peer.Peer;
@@ -9,21 +10,22 @@ import java.net.ServerSocket;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class P2P {
     static PieceFileManager pfm;
     static NeighborManager nm;
     static Peer us;
-
+    static ChokeHelper ch;
     public static void main(String[] args) throws IOException, InterruptedException {
         int id = Integer.parseInt(args[0]);
         System.out.format("Peer: %d \n", id);
         initPeerInfoCfg(id);
         parseCommonCfg();
-
         startTalkingTo(nm.getNeighbors());
         waitForPeersToTalkToMe();
+        startChokingThreads(nm.unchokeInterval, nm.optimInterval);
     }
 
     /**
@@ -61,6 +63,10 @@ public class P2P {
         nm = new NeighborManager(neighbors);
     }
 
+    private static void startChokingThreads(int unchokeInterval, int optimisticInterval) {
+        ch = new ChokeHelper(nm, us, optimisticInterval, unchokeInterval);
+    }
+
     /**
      * Sets all the attributes related to Common.cfg
      * @throws IOException
@@ -79,7 +85,8 @@ public class P2P {
         ss = br.readLine().split(" ");
         int optimisticInterval = Integer.parseInt(ss[1]);
 
-        startChokingThreads(unchokeInterval, optimisticInterval);
+        nm.optimInterval = optimisticInterval;
+        nm.unchokeInterval = unchokeInterval;
 
         ss = br.readLine().split(" ");
         String fileName = ss[1];
@@ -118,7 +125,7 @@ public class P2P {
     public static void startTalkingTo(List<Neighbor> neighbors) {
         for (Neighbor neighbor : neighbors) {
             if (neighbor.id < us.id) {
-                new Thread(new PeerTalker(us, neighbor, pfm, nm)).start();
+                new Thread(new PeerTalker(us, neighbor, pfm, nm), String.valueOf(neighbor.id) + " Talker").start();
             }
         }
     }
@@ -129,7 +136,7 @@ public class P2P {
             try {
                 // when a peer tries to connect to us, run a talkers.PeerResponder
                 while (true) {
-                    new Thread(new PeerResponder(server.accept(), us, pfm, nm)).start();
+                    new Thread(new PeerResponder(server.accept(), us, pfm, nm), "Responder " + String.valueOf(nm.getNeighbors().size())).start();
                 }
             } finally {
                 server.close();
@@ -139,11 +146,4 @@ public class P2P {
         }
     }
 
-    private static void startChokingThreads(int unchokeInterval, int optimisticInterval) {
-        ChokeHelper ch = new ChokeHelper(nm, us);
-        ScheduledExecutorService choker = Executors.newScheduledThreadPool(1);
-        choker.scheduleAtFixedRate(ch.chokeUnchokeInterval, 0, unchokeInterval, TimeUnit.SECONDS);
-        ScheduledExecutorService optimChoker = Executors.newScheduledThreadPool(1);
-        optimChoker.scheduleAtFixedRate(ch.optimChokeUnchokeInterval, 0, optimisticInterval, TimeUnit.SECONDS);
-    }
 }

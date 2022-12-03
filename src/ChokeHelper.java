@@ -1,3 +1,4 @@
+import logger.Logger;
 import messages.PeerMessage;
 import neighbor.NeighborManager;
 import peer.Neighbor;
@@ -15,23 +16,12 @@ public class ChokeHelper {
     public Runnable chokeUnchokeInterval;
     Runnable optimChokeUnchokeInterval;
 
-    public ChokeHelper(NeighborManager nm, Peer us) {
-        this.nm = nm;
-        this.us = us;
-        us.startTime = ChokeHelper.getTime();
-        Timer timer = new Timer();
-        this.chokeUnchokeInterval = new Runnable() {
-            @Override
-            public void run() {
-                unchokeChoke();
-            }
-        };
-        this.optimChokeUnchokeInterval = new Runnable() {
-            @Override
-            public void run() {
-                optimChokeUnchoke();
-            }
-        };
+    public ChokeHelper(NeighborManager nm, Peer us, int optimisticInterval, int unchokeInterval) {
+        Timer time = new Timer();
+        ChokeUnchokeTask ct = new ChokeUnchokeTask();
+        OptimeChokeTask ot = new OptimeChokeTask();
+        time.schedule(ct, unchokeInterval * 1000);
+        time.schedule(ot, optimisticInterval  * 1000);
     }
 
  //
@@ -44,19 +34,32 @@ public class ChokeHelper {
            return (int)(a.downloadRate - b.downloadRate);
        }
    }
+
+    public class ChokeUnchokeTask extends TimerTask {
+
+        @Override
+        public void run() {
+            unchokeChoke();
+        }
+    }
+
    //idk a good name for this, clears the unchoked array, the recreates it from neighbor list
    public void unchokeChoke(){
-       us.updateDownloadRate(P2P.pfm.numPieces);
+       //us.updateDownloadRate(P2P.pfm.numPieces);
        for(Neighbor p : nm.unchoked){
-           //TODO send choke message
-           //p.connection.sendMessage(new PeerMessage(0, PeerMessage.Type.CHOKE, Optional.empty()));
+           Logger.logChoke(p.id, us.id);
+           p.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, new byte[0]));
        }
        nm.unchoked.clear();
        if(!us.hasFile){
            //sorts neighbors by download rate, and picks the top n
            int left = numPrefNeighbors;
+           System.out.println("neighbors " + nm.getNeighbors().size());
            Collections.sort(nm.getNeighbors(), new SortbyDownload());
            nm.unchoked = nm.getNeighbors().subList(0, numPrefNeighbors);
+           for(Neighbor nbr : nm.getNeighbors()){
+               nbr.downloadRate = 0;
+           }
        } else {
            //picks random neighbors to unchoke
            int[] index = new int[numPrefNeighbors];
@@ -68,13 +71,21 @@ public class ChokeHelper {
            }
        }
        for(Neighbor p : nm.unchoked){
-           //TODO send unchoke message
+           Logger.logUnchoke(p.id, us.id);
            p.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
        }
    }
+    public class OptimeChokeTask extends TimerTask {
+
+        @Override
+        public void run() {
+            optimChokeUnchoke();
+        }
+    }
 
    public void optimChokeUnchoke(){
        if (nm.optimisticNeighbor != null){
+           Logger.logChoke(nm.optimisticNeighbor.id, us.id);
            nm.optimisticNeighbor.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, new byte[0]));
        }
        int index = new Random().nextInt(nm.getNeighbors().size() - numPrefNeighbors);
@@ -85,6 +96,7 @@ public class ChokeHelper {
                nm.optimisticNeighbor = nm.getNeighbors().get(index);
            }
        }
+       Logger.logUnchoke(nm.optimisticNeighbor.id, us.id);
        nm.optimisticNeighbor.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
    }
 

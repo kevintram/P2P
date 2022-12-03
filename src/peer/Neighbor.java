@@ -5,6 +5,8 @@ import messages.PeerMessage;
 public class Neighbor extends Peer {
     public PeerConnection connection;
     public PeerMessage.Type interested;
+    public boolean canDown = false;
+    public int downlaodRate = 0;
     public Neighbor(int id, String hostName, int port, boolean hasFile) {
         super(id, hostName, port, hasFile);
     }
@@ -17,4 +19,5 @@ public class Neighbor extends Peer {
         }
         interested = newInterest;
     }
+
 }

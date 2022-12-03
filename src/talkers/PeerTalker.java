@@ -37,18 +37,18 @@ public class PeerTalker implements Runnable {
     public void run() {
         try {
             start();
-            requestForPiecesIfInterested();
+            for(Neighbor nbr : nm.unchoked);
+                requestForPiecesIfInterested();
             waitForMessages();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     protected void start() throws InterruptedException {
-        nbr.connection = new PeerConnection(nbr.hostName, nbr.port);
         Logger.logMakeConnection(us.id, nbr.id);
-
+        nbr.connection = new PeerConnection(nbr.hostName, nbr.port);
+        Logger.logConnectionEstablished(us.id, nbr.id);
         sendHandshake();
         //TODO figure out how we should actually handle this
         try {
@@ -74,7 +74,7 @@ public class PeerTalker implements Runnable {
     }
 
     private void sendBitfield() throws InterruptedException {
-
+        System.out.println("Sending Bitfield");
         nbr.connection.sendMessage(new PeerMessage(BITFIELD, us.getBitfield()));
 
         PeerMessage res = nbr.connection.readMessage();
@@ -89,9 +89,7 @@ public class PeerTalker implements Runnable {
         if (nbr.interested == INTERESTED) {
             us.pendingBitfield(i);
             System.out.println(us.id + " is requesting for " + i + " from " + nbr.id);
-            if(!nm.unchoked.contains(nbr)) {
-                nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(i)));
-            }
+            nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(i)));
         }
     }
 
@@ -102,10 +100,15 @@ public class PeerTalker implements Runnable {
             PeerMessage msg = conn.readMessage();
             switch (msg.type){
                 case CHOKE:
+                    //if choke, I cant download, dont request
+                    nbr.canDown = false;
                     Logger.logChoke(us.id, nbr.id);
                     break;
                 case UNCHOKE:
+                    //if unchoke, I can download
+                    nbr.canDown = true;
                     Logger.logUnchoke(us.id, nbr.id);
+                    requestForPiecesIfInterested();
                     break;
                 case INTERESTED:
                     nbr.interested = INTERESTED;
@@ -119,8 +122,8 @@ public class PeerTalker implements Runnable {
                     Logger.logHave(us.id, nbr.id);
                     int i = Util.byteArrToInt(msg.payload);
                     nbr.updateBitfield(i);
-                    requestForPiecesIfInterested();
-
+                    if(nbr.canDown)
+                        requestForPiecesIfInterested();
                     break;
                 case BITFIELD:
                     throw new RuntimeException("Received a bitfield message from " + nbr.id + " (we shouldn't have)");
@@ -146,7 +149,7 @@ public class PeerTalker implements Runnable {
         byte[] payload = new byte[payloadLen];
         System.arraycopy(msg.payload, 0, payload, 0, 4); // write index into payload
         System.arraycopy(piece, 0, payload, 4, piece.length); // write piece into payload
-
+        nbr.downloadRate++;
         nbr.connection.sendMessage(new PeerMessage(PIECE, payload));
     }
 

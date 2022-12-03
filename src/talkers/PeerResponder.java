@@ -34,9 +34,9 @@ public class PeerResponder extends PeerTalker {
         byte[] buf = new byte[32];
         conn.read(buf, 32);
         Handshake handshake = new Handshake(buf);
-
+        nm.getNeighborById(handshake.id).connection = conn;
         nbr = nm.getNeighborById(handshake.id);
-        nbr.connection = conn;
+
 
         // send back handshake
         conn.send(new Handshake(us.id).toByteArray());
