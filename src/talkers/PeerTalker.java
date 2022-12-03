@@ -92,16 +92,19 @@ public class PeerTalker implements Runnable {
         if (nbr.interested == INTERESTED) {
             us.pendingBitfield(i);
             System.out.println(us.id + " is requesting for " + i + " from " + nbr.id);
-            if(nbr.canDown)
-                nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(i)));
+            nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(i)));
         }
     }
 
     protected void waitForMessages() throws InterruptedException {
+
         PeerConnection conn = nbr.connection;
         // runs a loop check for if it receives a message, when it does so it will respond accordingly
         while (conn.getSocket().isConnected()) {
             PeerMessage msg = conn.readMessage();
+            if(msg == null){
+                System.exit(0);
+            }
             switch (msg.type){
                 case CHOKE:
                     //if choke, I cant download, dont request
@@ -148,7 +151,6 @@ public class PeerTalker implements Runnable {
     }
 
     private void respondToRequestMsg(PeerMessage msg) throws InterruptedException {
-        // for now, just gonna pretend nobody is choked
         int pieceIndex = Util.byteArrToInt(msg.payload);
         System.out.println(us.id + " got request for " + pieceIndex + " from " + nbr.id);
         byte[] piece = pfm.getByteArrOfPiece(pieceIndex);

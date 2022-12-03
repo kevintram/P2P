@@ -119,8 +119,8 @@ public class ChokeHelper {
            }
        }
        if(!cont) {
-           nm.optimisticNeighbor = null;
-           if(us.hasFile)
+
+           if(us.hasFile && nm.optimisticNeighbor != null)
                System.exit(1);
            return;
        }

@@ -6,6 +6,7 @@ import messages.Util;
 import java.io.*;
 import java.net.ConnectException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 
 public class PeerConnection {
@@ -84,7 +85,9 @@ public class PeerConnection {
     public int read(byte[] buf, int len) {
         try {
             return in.read(buf, 0, len);
-        } catch (IOException e) {
+        }catch (SocketException e){
+            return -1;
+        }catch (IOException e) {
             e.printStackTrace();
             return -1;
         }
@@ -94,15 +97,15 @@ public class PeerConnection {
 
         // get payload length
         byte[] lenBuf = new byte[4];
-        read(lenBuf, 4);
+        if(read(lenBuf, 4) == -1) return null;
         int len = Util.byteArrToInt(lenBuf);
         // get type
         byte[] typeBuf = new byte[1];
-        read(typeBuf, 1);
+        if(read(typeBuf, 1) == -1) return null;
         PeerMessage.Type type = PeerMessage.Type.values()[typeBuf[0]];
         // get payload
         byte[] payload = new byte[len];
-        read(payload, len);
+        if(read(payload, len) == -1) return null;
 
         return new PeerMessage(type, payload);
     }

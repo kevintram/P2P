@@ -91,7 +91,6 @@ public class Peer {
             if(bitfield[i] == 0){
                 return false;
             }
-
         }
         Logger.logComplete(this.id);
         return true;
