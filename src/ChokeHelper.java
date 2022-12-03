@@ -54,7 +54,6 @@ public class ChokeHelper {
        if(!us.hasFile){
            //sorts neighbors by download rate, and picks the top n
            int left = numPrefNeighbors;
-           System.out.println("neighbors " + nm.getNeighbors().size());
            Collections.sort(nm.getNeighbors(), new SortbyDownload());
            nm.unchoked = nm.getNeighbors().subList(0, numPrefNeighbors);
            for(Neighbor nbr : nm.getNeighbors()){

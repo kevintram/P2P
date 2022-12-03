@@ -166,6 +166,7 @@ public class PeerTalker implements Runnable {
         Logger.logDownload(us.id, nbr.id, index);
         // send haves to neighbors
         for (Neighbor n : nm.getNeighbors()) {
+            if(n.isInit)
                 n.connection.sendMessage(new PeerMessage(HAVE, Util.intToByteArr(index)));
         }
         if(us.finishedFile(pfm.numPieces))

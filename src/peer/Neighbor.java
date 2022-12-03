@@ -7,6 +7,7 @@ public class Neighbor extends Peer {
     public PeerMessage.Type interested;
     public boolean canDown = false;
     public int downlaodRate = 0;
+    public boolean isInit = false;
     public Neighbor(int id, String hostName, int port, boolean hasFile) {
         super(id, hostName, port, hasFile);
     }
