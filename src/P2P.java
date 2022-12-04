@@ -2,18 +2,23 @@ import neighbor.NeighborManager;
 import peer.Neighbor;
 import peer.Peer;
 import piece.PieceFileManager;
-import talkers.*;
+import talkers.PeerResponder;
+import talkers.PeerTalker;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class P2P {
     static PieceFileManager pfm;
     static NeighborManager nm;
     static Peer us;
     static ChokeHelper ch;
-
     public static void main(String[] args) throws IOException, InterruptedException {
         int id = Integer.parseInt(args[0]);
         System.out.format("Peer: %d \n", id);
@@ -134,7 +139,9 @@ public class P2P {
                 while (true) {
                     new Thread(new PeerResponder(server.accept(), us, pfm, nm), us.id + " Responder for" + nm.getNeighbors().size()).start();
                 }
-            } finally {
+            } catch (Exception e){
+                e.printStackTrace();
+            } finally{
                 server.close();
             }
         } catch (IOException e) {

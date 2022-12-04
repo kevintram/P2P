@@ -106,9 +106,10 @@ public class PeerConnection {
         byte[] typeBuf = new byte[1];
         if(read(typeBuf, 1) == -1) return null;
         if(typeBuf[0] > 7){
-            byte[] payload = new byte[5];
+            System.out.println(typeBuf[0]);
+            byte[] payload = new byte[len];
             read(payload, payload.length);
-            System.out.println("start: " + new String(payload));
+            System.out.println("length: " + len  + "actual" + payload.length + " start: " + new String(payload));
             System.exit(-1);
         }
         PeerMessage.Type type = PeerMessage.Type.values()[typeBuf[0]];
