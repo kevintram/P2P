@@ -35,14 +35,15 @@ public class PeerTalker implements Runnable {
 
     @Override
     public void run() {
-        try {
-            start();
-            for(Neighbor nbr : nm.unchoked);
+            try {
+                start();
+                for (Neighbor nbr : nm.unchoked) ;
                 requestForPiecesIfInterested();
-            waitForMessages();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+                waitForMessages();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
     }
 
     protected void start() throws InterruptedException {
@@ -101,60 +102,61 @@ public class PeerTalker implements Runnable {
         PeerConnection conn = nbr.connection;
         // runs a loop check for if it receives a message, when it does so it will respond accordingly
         while (conn.getSocket().isConnected()) {
-            PeerMessage msg = conn.readMessage();
-            if(msg == null){
-                System.exit(0);
-            }
-            switch (msg.type){
-                case CHOKE:
-                    //if choke, I cant download, dont request
-                    nbr.canDown = false;
-                    Logger.logChoke(us.id, nbr.id);
-                    break;
-                case UNCHOKE:
-                    //if unchoke, I can download
-                    nbr.canDown = true;
-                    Logger.logUnchoke(us.id, nbr.id);
-                    requestForPiecesIfInterested();
-                    break;
-                case INTERESTED:
-                    nbr.interested = INTERESTED;
-                    Logger.logInterest(us.id, nbr.id);
-                    break;
-                case NOT_INTERESTED:
-                    nbr.interested = NOT_INTERESTED;
-                    Logger.logNotInterest(us.id, nbr.id);
-                    break;
-                case HAVE:
-                    Logger.logHave(us.id, nbr.id);
-                    int i = Util.byteArrToInt(msg.payload);
-                    nbr.updateBitfield(i);
-                    if(us.getBitfield()[i] == 0){
-                        nbr.setInterested(INTERESTED);
-                    }
-                    //checkInterest();
-                    if(nbr.canDown)
+                PeerMessage msg = conn.readMessage();
+
+                if (msg == null) {
+                    System.exit(0);
+                }
+                switch (msg.type) {
+                    case CHOKE:
+                        //if choke, I cant download, dont request
+                        nbr.canDown = false;
+                        Logger.logChoke(us.id, nbr.id);
+                        break;
+                    case UNCHOKE:
+                        //if unchoke, I can download
+                        nbr.canDown = true;
+                        Logger.logUnchoke(us.id, nbr.id);
                         requestForPiecesIfInterested();
-                    break;
-                case BITFIELD:
-                    throw new RuntimeException("Received a bitfield message from " + nbr.id + " (we shouldn't have)");
-                case REQUEST:
-                    respondToRequestMsg(msg);
-                    break;
-                case PIECE:
-                    respondToPieceMsg(msg);
-                    break;
-                default:
-                    throw new RuntimeException("Invalid Message Type");
-            }
+                        break;
+                    case INTERESTED:
+                        nbr.theyInterest = INTERESTED;
+                        Logger.logInterest(us.id, nbr.id);
+                        break;
+                    case NOT_INTERESTED:
+                        nbr.theyInterest = NOT_INTERESTED;
+                        Logger.logNotInterest(us.id, nbr.id);
+                        break;
+                    case HAVE:
+                        Logger.logHave(us.id, nbr.id);
+                        int i = Util.byteArrToInt(msg.payload);
+                        nbr.updateBitfield(i);
+                        if (us.getBitfield()[i] == 0) {
+                            nbr.setInterested(INTERESTED);
+                        }
+                        //checkInterest(); //idk what this function is for
+                        if (nbr.canDown)
+                            requestForPiecesIfInterested();
+                        break;
+                    case BITFIELD:
+                        throw new RuntimeException("Received a bitfield message from " + nbr.id + " (we shouldn't have)");
+                    case REQUEST:
+                        respondToRequestMsg(msg);
+                        break;
+                    case PIECE:
+                        respondToPieceMsg(msg);
+                        break;
+                    default:
+                        throw new RuntimeException("Invalid Message Type");
+                }
         }
     }
 
     private void respondToRequestMsg(PeerMessage msg) throws InterruptedException {
         int pieceIndex = Util.byteArrToInt(msg.payload);
         System.out.println(us.id + " got request for " + pieceIndex + " from " + nbr.id);
-        byte[] piece = pfm.getByteArrOfPiece(pieceIndex);
-
+        byte[] piece;
+        piece = pfm.getByteArrOfPiece(pieceIndex);
         int payloadLen = 4 + piece.length;
         byte[] payload = new byte[payloadLen];
         System.arraycopy(msg.payload, 0, payload, 0, 4); // write index into payload

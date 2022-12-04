@@ -119,11 +119,11 @@ public class P2P {
     }
 
     public static void startTalkingTo(List<Neighbor> neighbors) {
-        for (Neighbor neighbor : neighbors) {
-            if (neighbor.id < us.id) {
-                new Thread(new PeerTalker(us, neighbor, pfm, nm), neighbor.id + " Talker").start();
+            for (Neighbor neighbor : neighbors) {
+                if (neighbor.id < us.id) {
+                    new Thread(new PeerTalker(us, neighbor, pfm, nm), neighbor.id + " Talker for " + us.id).start();
+                }
             }
-        }
     }
 
     public static void waitForPeersToTalkToMe() {
@@ -132,7 +132,7 @@ public class P2P {
             try {
                 // when a peer tries to connect to us, run a talkers.PeerResponder
                 while (true) {
-                    new Thread(new PeerResponder(server.accept(), us, pfm, nm), "Responder " + nm.getNeighbors().size()).start();
+                    new Thread(new PeerResponder(server.accept(), us, pfm, nm), us.id + " Responder for" + nm.getNeighbors().size()).start();
                 }
             } finally {
                 server.close();

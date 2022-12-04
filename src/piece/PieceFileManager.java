@@ -40,6 +40,7 @@ public class PieceFileManager {
                 br.read(buff, 0, pieceSize);
                 updatePieceFile(i, buff);
             }
+            br.close();
         }
 
         // adds a shutdown hook, so on client termination, temp files will combine if the file is complete
@@ -89,7 +90,7 @@ public class PieceFileManager {
     }
 
     // returns the entire piece as a byte array
-    public byte[] getByteArrOfPiece(int index) {
+    public synchronized byte[] getByteArrOfPiece(int index) {
         try {
             return Files.readAllBytes(new File(ourPath + File.separator + index + ".tmp").toPath());
         } catch (IOException e) {
@@ -101,7 +102,7 @@ public class PieceFileManager {
      * @param finalFile file name of the final file to download
      * @return returns true if it worked
      */
-    public boolean combine(String finalFile) {
+    public synchronized boolean combine(String finalFile) {
         try {
             new FileWriter(ourPath + File.separator + finalFile, false).close();
             FileWriter file = new FileWriter(ourPath + File.separator + finalFile, true);

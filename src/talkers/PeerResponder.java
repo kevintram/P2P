@@ -24,6 +24,13 @@ public class PeerResponder extends PeerTalker {
     }
 
     @Override
+    public void run() {
+        synchronized (conn) {
+            super.run();
+        }
+    }
+
+    @Override
     protected void start() throws InterruptedException {
         receiveHandshake();
         receiveBitfield();

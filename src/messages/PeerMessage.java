@@ -21,7 +21,6 @@ public class PeerMessage {
 
     public byte[] toByteArray() {
         byte[] res = new byte[5 + len];
-
         System.arraycopy(Util.intToByteArr(len), 0, res, 0, 4); // write length
         res[4] = (byte) type.ordinal();
         System.arraycopy(payload, 0, res, 5, len); // write payload

@@ -1,7 +1,6 @@
 package peer;
 
 import logger.Logger;
-import piece.PieceFileManager;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -28,11 +27,11 @@ public class Peer {
         this.downloadRate = -1.0;
     }
 
-    public void setDownloadRate(float rate){
+    public synchronized void setDownloadRate(float rate){
         this.downloadRate = rate;
     }
 
-    public void updateDownloadRate(int numPieces){
+    public synchronized void updateDownloadRate(int numPieces){
         int counterDown = 0;
         int buffer = (8 - (numPieces % 8));
         for(int i = 0; i < bitfield.length-buffer; i++){
@@ -44,7 +43,7 @@ public class Peer {
     }
 
 
-    public byte[] getBitfield() throws InterruptedException {
+    public synchronized byte[] getBitfield() throws InterruptedException {
         lock.readLock().lock();
         //to ensure a read happens after a write, lock until writer done
         if(lock.isWriteLocked())
@@ -54,7 +53,7 @@ public class Peer {
         return temp;
     }
 
-    public void updateBitfield(int index) throws InterruptedException {
+    public synchronized void updateBitfield(int index) throws InterruptedException {
         if(lock.isWriteLocked())
             latch.await();
         lock.writeLock().lock();
@@ -64,7 +63,7 @@ public class Peer {
         latch.countDown();
     }
 
-    public void setBitfield(byte[] newField) throws InterruptedException {
+    public synchronized void setBitfield(byte[] newField) throws InterruptedException {
         if(lock.isWriteLocked())
             latch.await();
         lock.writeLock().lock();
@@ -74,7 +73,7 @@ public class Peer {
         latch.countDown();
     }
 
-    public void pendingBitfield(int index) throws InterruptedException {
+    public synchronized void pendingBitfield(int index) throws InterruptedException {
         if(lock.isWriteLocked())
             latch.await();
         lock.writeLock().lock();
@@ -85,7 +84,7 @@ public class Peer {
     }
 
 
-    public boolean finishedFile(int numPieces) {
+    public synchronized boolean finishedFile(int numPieces) {
         int buffer = (8 - (numPieces % 8));
         for(int i = 0; i < bitfield.length-buffer; i++){
             if(bitfield[i] == 0){

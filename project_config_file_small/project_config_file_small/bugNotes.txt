@@ -1,0 +1,25 @@
+requesting 2 and downloading worked
+
+requesting 5 and downloading worked (both crashes was second piece)
+5 had null characters tacked on end
+
+requesting 7 and 5, both got downloaded then crashed
+piece 5 sent is has 565 lines
+piece recieved by 2 has 384 lines
+piece 7 sent has 7 lines
+piece 7 recieved has 7 lines
+
+piece 1 requested and downloaded before next request crashes
+piece 1 sent has 485 lines
+piece 1 recieved has 342 lines
+line 342 sent: on, 'that they'd let Dinah ...
+line 341 recieved: on, 'tha
+ 
+
+piece 2 recieved, next crash happens after requesting 4
+however, an interest message was recieved by 1 before it happened (most likely timing)
+
+piece 2 sent has 507 lines
+piece 2 recieved has 345 lines
+piece 2 sent: 'As if it wasn't trouble enough...
+piece 2 recieved: 'As if it wasn't troub

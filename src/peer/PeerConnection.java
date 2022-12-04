@@ -3,7 +3,9 @@ package peer;
 import messages.PeerMessage;
 import messages.Util;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketException;
@@ -20,7 +22,6 @@ public class PeerConnection {
             try {
                 socket = new Socket(hostName, port);
                 in = socket.getInputStream();
-
                 out = socket.getOutputStream();
                 out.flush();
             } catch(UnknownHostException e) {
@@ -48,9 +49,9 @@ public class PeerConnection {
     }
 
     public void close() {
-
         try {
             in.close();
+            out.flush();
             out.close();
             socket.close();
         } catch(IOException ioException){
@@ -62,17 +63,17 @@ public class PeerConnection {
      * Sends a byte array through the connection
      * @param msg the msg to send
      */
-    public void send(byte[] msg) {
 
+    public void send(byte[] msg) {
         try {
-            out.write(msg);
-            out.flush();
+                out.write(msg);
+                out.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void sendMessage(PeerMessage msg) {
+    public void sendMessage(PeerMessage msg) throws InterruptedException {
         send(msg.toByteArray());
     }
 
@@ -84,7 +85,9 @@ public class PeerConnection {
      */
     public int read(byte[] buf, int len) {
         try {
-            return in.read(buf, 0, len);
+            synchronized (in){
+                return in.read(buf, 0, len);
+            }
         }catch (SocketException e){
             return -1;
         }catch (IOException e) {
@@ -94,14 +97,20 @@ public class PeerConnection {
     }
 
     public PeerMessage readMessage() {
-
         // get payload length
+
         byte[] lenBuf = new byte[4];
         if(read(lenBuf, 4) == -1) return null;
         int len = Util.byteArrToInt(lenBuf);
         // get type
         byte[] typeBuf = new byte[1];
         if(read(typeBuf, 1) == -1) return null;
+        if(typeBuf[0] > 7){
+            byte[] payload = new byte[5];
+            read(payload, payload.length);
+            System.out.println("start: " + new String(payload));
+            System.exit(-1);
+        }
         PeerMessage.Type type = PeerMessage.Type.values()[typeBuf[0]];
         // get payload
         byte[] payload = new byte[len];
