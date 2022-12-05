@@ -105,7 +105,7 @@ public class PeerTalker implements Runnable {
         PeerConnection conn = nbr.connection;
         // runs a loop check for if it receives a message, when it does so it will respond accordingly
         while (conn.getSocket().isConnected()) {
-                PeerMessage msg = conn.readMessage();
+            PeerMessage msg = conn.readMessage();
 
                 if (msg == null) {
                     System.exit(0);

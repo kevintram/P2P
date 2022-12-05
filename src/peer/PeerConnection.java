@@ -40,7 +40,6 @@ public class PeerConnection {
         try {
             this.socket = socket;
             in = socket.getInputStream();
-
             out = socket.getOutputStream();
             out.flush();
         } catch (IOException e) {
@@ -85,9 +84,8 @@ public class PeerConnection {
      */
     public int read(byte[] buf, int len) {
         try {
-            synchronized (in){
-                return in.read(buf, 0, len);
-            }
+            return in.read(buf, 0, len);
+
         }catch (SocketException e){
             return -1;
         }catch (IOException e) {

@@ -18,16 +18,14 @@ public class P2P {
         int id = Integer.parseInt(args[0]);
         initStuffFromPeerInfoCfg(id);
         initStuffFromCommonCfg();
-
+        genLogFile();
         startTalkingTo(nm.getNeighbors());
         startChokingThreads(nm.unchokeInterval, nm.optimInterval);
         waitForPeersToTalkToMe();
     }
     private static void genLogFile() throws IOException {
         File logFile =  new File("log_peer_"+us.id+".log");
-        FileWriter temp = new FileWriter(logFile); //clears the log from last run
-        temp.write("");
-        temp.close();
+        new FileWriter(logFile, false).close(); //clears the log from last run
     }
     /**
      * Sets us and our neighbors from the PeerInfo.cfg file
