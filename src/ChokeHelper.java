@@ -89,7 +89,7 @@ public class ChokeHelper {
             List<Integer> index = new ArrayList<>();
             for (int i = 0; i < numPrefNeighbors; i++) {
                 int prefIndex = new Random().nextInt(nm.getNeighbors().size());
-                while (!nm.getNeighbors().get(prefIndex).isInit || index.contains(prefIndex)) {
+                while (!nm.getNeighbors().get(prefIndex).isInit ||  index.contains(prefIndex)) {
                     prefIndex = new Random().nextInt(nm.getNeighbors().size());
                 }
                 index.add(prefIndex);

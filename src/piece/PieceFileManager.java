@@ -112,7 +112,6 @@ public class PieceFileManager {
                     file.write(b);
                 }
             }
-
             file.close();
 
         } catch (IOException e){

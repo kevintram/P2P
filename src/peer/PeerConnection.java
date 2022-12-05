@@ -18,10 +18,11 @@ public class PeerConnection {
     private InputStream in;
 
     public PeerConnection(String hostName, int port) {
-        while (socket == null || !socket.isConnected()) {
+                while (socket == null || !socket.isConnected()) {
             try {
                 socket = new Socket(hostName, port);
                 in = socket.getInputStream();
+
                 out = socket.getOutputStream();
                 out.flush();
             } catch(UnknownHostException e) {
@@ -33,13 +34,13 @@ public class PeerConnection {
                 e.printStackTrace();
             }
         }
-
     }
 
     public PeerConnection(Socket socket) {
         try {
             this.socket = socket;
             in = socket.getInputStream();
+
             out = socket.getOutputStream();
             out.flush();
         } catch (IOException e) {
@@ -50,7 +51,6 @@ public class PeerConnection {
     public void close() {
         try {
             in.close();
-            out.flush();
             out.close();
             socket.close();
         } catch(IOException ioException){
@@ -62,11 +62,10 @@ public class PeerConnection {
      * Sends a byte array through the connection
      * @param msg the msg to send
      */
-
     public void send(byte[] msg) {
         try {
-                out.write(msg);
-                out.flush();
+            out.write(msg);
+            out.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -84,8 +83,15 @@ public class PeerConnection {
      */
     public int read(byte[] buf, int len) {
         try {
-            return in.read(buf, 0, len);
 
+            // read over and over again until you've read number of bytes = len
+            int totalBytesRead = 0;
+            while (totalBytesRead < len) {
+                int bytesRead = in.read(buf, totalBytesRead, len - totalBytesRead);
+                if (bytesRead == -1) return -1;
+                totalBytesRead += bytesRead;
+            }
+            return totalBytesRead;
         }catch (SocketException e){
             return -1;
         }catch (IOException e) {
@@ -96,7 +102,6 @@ public class PeerConnection {
 
     public PeerMessage readMessage() {
         // get payload length
-
         byte[] lenBuf = new byte[4];
         if(read(lenBuf, 4) == -1) return null;
         int len = Util.byteArrToInt(lenBuf);
@@ -107,11 +112,10 @@ public class PeerConnection {
         // get payload
         byte[] payload = new byte[len];
         if(read(payload, len) == -1) return null;
-
         return new PeerMessage(type, payload);
     }
 
-    public final Socket getSocket(){
+    public Socket getSocket(){
         return this.socket;
     }
 }

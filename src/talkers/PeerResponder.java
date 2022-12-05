@@ -45,6 +45,7 @@ public class PeerResponder extends PeerTalker {
         nm.getNeighborById(handshake.id).connection = conn;
         nm.getNeighborById(handshake.id).isInit = true;
         nbr = nm.getNeighborById(handshake.id);
+        nbr.connection.getSocket().setReceiveBufferSize(pfm.normalPieceSize + 10);
         // send back handshake
         conn.send(new Handshake(us.id).toByteArray());
         Logger.logConnectionEstablished(us.id, nbr.id);
