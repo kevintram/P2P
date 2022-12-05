@@ -75,7 +75,7 @@ public class PieceFileManager {
     // appends data to the end of the piece
     public boolean updatePieceFile(int index, byte[] data){
         try{
-            FileWriter temp = new FileWriter(ourPath + File.separator + index + ".tmp", true);
+            FileOutputStream temp = new FileOutputStream(ourPath + File.separator + index + ".tmp", true);
             for(byte b : data){
                 temp.write(b);
             }
@@ -90,7 +90,7 @@ public class PieceFileManager {
     }
 
     // returns the entire piece as a byte array
-    public synchronized byte[] getByteArrOfPiece(int index) {
+    public byte[] getByteArrOfPiece(int index) {
         try {
             return Files.readAllBytes(new File(ourPath + File.separator + index + ".tmp").toPath());
         } catch (IOException e) {
@@ -102,10 +102,10 @@ public class PieceFileManager {
      * @param finalFile file name of the final file to download
      * @return returns true if it worked
      */
-    public synchronized boolean combine(String finalFile) {
+    public boolean combine(String finalFile) {
         try {
             new FileWriter(ourPath + File.separator + finalFile, false).close();
-            FileWriter file = new FileWriter(ourPath + File.separator + finalFile, true);
+            FileOutputStream file = new FileOutputStream(ourPath + File.separator + finalFile, true);
             for(int i = 0; i < numPieces; i++){
                 byte[] temp = getByteArrOfPiece(i);
                 for (byte b : temp) {

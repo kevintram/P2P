@@ -4,6 +4,7 @@ import neighbor.NeighborManager;
 import peer.Neighbor;
 import peer.Peer;
 
+import java.io.IOException;
 import java.util.*;
 
 public class ChokeHelper {
@@ -44,104 +45,106 @@ public class ChokeHelper {
                 unchokeChoke();
             } catch (InterruptedException e) {
                 e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
 
     //idk a good name for this, clears the unchoked array, the recreates it from neighbor list
-    public void unchokeChoke() throws InterruptedException {
+    public void unchokeChoke() throws InterruptedException, IOException {
         //us.updateDownloadRate(P2P.pfm.numPieces);
 
-            boolean cont = false;
-            for (Neighbor p : P2P.nm.unchoked) {
-                Logger.logChoke(p.id, us.id);
-                p.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, new byte[0]));
+        boolean cont = false;
+        for (Neighbor p : P2P.nm.unchoked) {
 
+            p.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, new byte[0]));
+
+        }
+        for (Neighbor n : nm.getNeighbors()) {
+            if (n.theyInterest == PeerMessage.Type.INTERESTED) {
+                cont = true;
             }
+        }
+        nm.unchoked.clear();
+        if (!cont) return;
+        if (!us.hasFile) {
+            //sorts neighbors by download rate, and picks the top n
             for (Neighbor n : nm.getNeighbors()) {
-                if (n.theyInterest == PeerMessage.Type.INTERESTED) {
-                    cont = true;
-                }
+                if (n.isInit && n.theyInterest == PeerMessage.Type.INTERESTED)
+                    downloadList.add(n);
             }
-            nm.unchoked.clear();
-            if (!cont) return;
-            if (!us.hasFile) {
-                //sorts neighbors by download rate, and picks the top n
-                for (Neighbor n : nm.getNeighbors()) {
-                    if (n.isInit && n.theyInterest == PeerMessage.Type.INTERESTED)
-                        downloadList.add(n);
-                }
-                Collections.sort(downloadList, new SortbyDownload());
-                if (downloadList.size() > numPrefNeighbors) {
-                    nm.unchoked.addAll(downloadList.subList(0, numPrefNeighbors));
-                } else {
-                    nm.unchoked.addAll(downloadList);
-                }
-                for (Neighbor nbr : nm.getNeighbors()) {
-                    nbr.downloadRate = 0;
-                }
+            Collections.sort(downloadList, new SortbyDownload());
+            if (downloadList.size() > numPrefNeighbors) {
+                nm.unchoked.addAll(downloadList.subList(0, numPrefNeighbors));
             } else {
-                //picks random neighbors to unchoke
-                List<Integer> index = new ArrayList<>();
-                for (int i = 0; i < numPrefNeighbors; i++) {
-                    int prefIndex = new Random().nextInt(nm.getNeighbors().size());
-                    while (!nm.getNeighbors().get(prefIndex).isInit || index.contains(prefIndex)) {
-                        prefIndex = new Random().nextInt(nm.getNeighbors().size());
-                    }
-                    index.add(prefIndex);
-                }
-                for (int i : index) {
-                    nm.unchoked.add(nm.getNeighbors().get(i));
-                }
+                nm.unchoked.addAll(downloadList);
             }
-            for (Neighbor p : nm.unchoked) {
-                Logger.logUnchoke(p.id, us.id);
-                p.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
+            Logger.logChangeNeighbors(us.id, nm.unchoked);
+            for (Neighbor nbr : nm.getNeighbors()) {
+                nbr.downloadRate = 0;
             }
+        } else {
+            //picks random neighbors to unchoke
+            List<Integer> index = new ArrayList<>();
+            for (int i = 0; i < numPrefNeighbors; i++) {
+                int prefIndex = new Random().nextInt(nm.getNeighbors().size());
+                while (!nm.getNeighbors().get(prefIndex).isInit || index.contains(prefIndex)) {
+                    prefIndex = new Random().nextInt(nm.getNeighbors().size());
+                }
+                index.add(prefIndex);
+            }
+            for (int i : index) {
+                nm.unchoked.add(nm.getNeighbors().get(i));
+            }
+            Logger.logChangeNeighbors(us.id, nm.unchoked);
+        }
+        for (Neighbor p : nm.unchoked) {
+            p.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
+        }
 
     }
 
     public class OptimeChokeTask extends TimerTask {
-
         @Override
         public void run() {
             try {
                 optimChokeUnchoke();
             } catch (InterruptedException e) {
                 e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
 
-    public void optimChokeUnchoke() throws InterruptedException {
-            if (nm.optimisticNeighbor != null) {
-                Logger.logChoke(nm.optimisticNeighbor.id, us.id);
-                nm.optimisticNeighbor.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, new byte[0]));
+    public void optimChokeUnchoke() throws InterruptedException, IOException {
+        if (nm.optimisticNeighbor != null) {
+            nm.optimisticNeighbor.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, new byte[0]));
+        }
+        if (nm.getNeighbors().size() <= nm.unchoked.size()) {
+            return;
+        }
+        boolean cont = false;
+        for (Neighbor n : nm.getNeighbors()) {
+            if (n.theyInterest == PeerMessage.Type.INTERESTED) {
+                cont = true;
+                break;
             }
-            if (nm.getNeighbors().size() <= nm.unchoked.size()) {
-                nm.optimisticNeighbor = null;
-                return;
-            }
-            boolean cont = false;
-            for (Neighbor n : nm.getNeighbors()) {
-                if (n.theyInterest == PeerMessage.Type.INTERESTED) {
-                    cont = true;
-                    break;
-                }
-            }
-            if (!cont) {
-                if (us.hasFile && nm.optimisticNeighbor != null)
-                    System.exit(1);
-                return;
-            }
-            int index = new Random().nextInt(nm.getNeighbors().size());
-            while (nm.unchoked.contains(nm.getNeighbors().get(index)) || !nm.getNeighbors().get(index).isInit)
-                index = new Random().nextInt(nm.getNeighbors().size());
-            nm.optimisticNeighbor = nm.getNeighbors().get(index);
-            Logger.logUnchoke(nm.optimisticNeighbor.id, us.id);
-            nm.optimisticNeighbor.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
-
+        }
+        if (!cont) {
+            if (us.hasFile && nm.optimisticNeighbor != null)
+                System.exit(1);
+            return;
+        }
+        int index = new Random().nextInt(nm.getNeighbors().size());
+        while (nm.unchoked.contains(nm.getNeighbors().get(index)) || !nm.getNeighbors().get(index).isInit)
+            index = new Random().nextInt(nm.getNeighbors().size());
+        nm.optimisticNeighbor = nm.getNeighbors().get(index);
+        Logger.logOptChangeNeighbor(us.id, nm.optimisticNeighbor.id);
+        nm.optimisticNeighbor.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
     }
+
 
     public static Long getTime() {
         return System.nanoTime();

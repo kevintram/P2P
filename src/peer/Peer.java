@@ -2,6 +2,7 @@ package peer;
 
 import logger.Logger;
 
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -84,14 +85,17 @@ public class Peer {
     }
 
 
-    public synchronized boolean finishedFile(int numPieces) {
-        int buffer = (8 - (numPieces % 8));
-        for(int i = 0; i < bitfield.length-buffer; i++){
-            if(bitfield[i] == 0){
-                return false;
+    public synchronized boolean finishedFile(int numPieces) throws IOException {
+        if(!hasFile) {
+            int buffer = (8 - (numPieces % 8));
+            for (int i = 0; i < bitfield.length - buffer; i++) {
+                if (bitfield[i] != 1) {
+                    return false;
+                }
             }
+            Logger.logComplete(this.id);
+            return true;
         }
-        Logger.logComplete(this.id);
-        return true;
+        return false;
     }
 }

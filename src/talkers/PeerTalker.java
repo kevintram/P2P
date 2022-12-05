@@ -10,6 +10,7 @@ import messages.Handshake;
 import messages.PeerMessage;
 import piece.PieceFileManager;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
@@ -37,19 +38,20 @@ public class PeerTalker implements Runnable {
     public void run() {
             try {
                 start();
-                for (Neighbor nbr : nm.unchoked) ;
-                requestForPiecesIfInterested();
+                for (Neighbor nbr : nm.unchoked)
+                    requestForPiecesIfInterested();
                 waitForMessages();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
 
     }
 
-    protected void start() throws InterruptedException {
+    protected void start() throws InterruptedException, IOException {
         Logger.logMakeConnection(us.id, nbr.id);
         nbr.connection = new PeerConnection(nbr.hostName, nbr.port);
-        Logger.logConnectionEstablished(us.id, nbr.id);
         sendHandshake();
         //TODO figure out how we should actually handle this
         try {
@@ -67,19 +69,21 @@ public class PeerTalker implements Runnable {
         // read response
         byte[] res = new byte[32];
         nbr.connection.read(res, 32);
-
-        // check if response is right
-        if (new Handshake(res).equals(new Handshake(nbr.id))) {
-            System.out.println("Shook hands with " + nbr.id);
-        }
+        nbr.isInit = true;
     }
 
     private void sendBitfield() throws InterruptedException {
-        System.out.println("Sending Bitfield");
         nbr.connection.sendMessage(new PeerMessage(BITFIELD, us.getBitfield()));
 
         PeerMessage res = nbr.connection.readMessage();
         nbr.setBitfield(res.payload);
+        for(int i = 0; i < nbr.getBitfield().length; i++){
+            if(us.getBitfield()[i] == 0 && nbr.getBitfield()[i] == 1){
+                nbr.setInterested(INTERESTED);
+                return;
+            }
+        }
+        nbr.setInterested(NOT_INTERESTED);
     }
     private int checkInterest() throws InterruptedException {
         int i = getNewRandomPieceFrom(nbr.getBitfield());
@@ -92,12 +96,11 @@ public class PeerTalker implements Runnable {
         int i = checkInterest();
         if (nbr.interested == INTERESTED) {
             us.pendingBitfield(i);
-            System.out.println(us.id + " is requesting for " + i + " from " + nbr.id);
             nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(i)));
         }
     }
 
-    protected void waitForMessages() throws InterruptedException {
+    protected void waitForMessages() throws InterruptedException, IOException {
 
         PeerConnection conn = nbr.connection;
         // runs a loop check for if it receives a message, when it does so it will respond accordingly
@@ -154,7 +157,6 @@ public class PeerTalker implements Runnable {
 
     private void respondToRequestMsg(PeerMessage msg) throws InterruptedException {
         int pieceIndex = Util.byteArrToInt(msg.payload);
-        System.out.println(us.id + " got request for " + pieceIndex + " from " + nbr.id);
         byte[] piece;
         piece = pfm.getByteArrOfPiece(pieceIndex);
         int payloadLen = 4 + piece.length;
@@ -165,7 +167,7 @@ public class PeerTalker implements Runnable {
         nbr.connection.sendMessage(new PeerMessage(PIECE, payload));
     }
 
-    private void respondToPieceMsg(PeerMessage msg) throws InterruptedException {
+    private void respondToPieceMsg(PeerMessage msg) throws InterruptedException, IOException {
         // write the piece down
         byte[] indexBuf = Arrays.copyOfRange(msg.payload, 0, 4);
         int index = Util.byteArrToInt(indexBuf);
@@ -183,11 +185,9 @@ public class PeerTalker implements Runnable {
         }
         if(us.finishedFile(pfm.numPieces))
             us.hasFile = true;
-       //    for(Neighbor n : nm.getNeighbors()){
-       //        if(n.isInit)
-       //            n.connection.sendMessage(new PeerMessage(NOT_INTERESTED, new byte[0]));
-       //    }
-        requestForPiecesIfInterested();
+
+        if(nbr.canDown)
+            requestForPiecesIfInterested();
     }
 
     /**
