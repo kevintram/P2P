@@ -37,7 +37,7 @@ public class PeerResponder extends PeerTalker {
         receiveBitfield();
     }
 
-    private void receiveHandshake() throws IOException {
+    private void receiveHandshake() throws IOException, InterruptedException {
         // read handshake
         byte[] buf = new byte[32];
         conn.read(buf, 32);

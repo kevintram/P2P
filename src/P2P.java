@@ -100,7 +100,6 @@ public class P2P {
         int finalPieceSize = fileSize % pieceSize;
         int bitfieldPaddingSize = (8 - (numPieces % 8));
         int bitfieldSize = numPieces + bitfieldPaddingSize;
-
         String ourPath = "peer_" + us.id + File.separator;
         pfm = new PieceFileManager(ourPath, fileName, pieceSize, finalPieceSize, numPieces);
 

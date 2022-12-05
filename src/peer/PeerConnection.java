@@ -10,12 +10,17 @@ import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class PeerConnection {
 
     private Socket socket;
     private OutputStream out;
     private InputStream in;
+
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private CountDownLatch latch;
 
     public PeerConnection(String hostName, int port) {
                 while (socket == null || !socket.isConnected()) {
@@ -62,10 +67,16 @@ public class PeerConnection {
      * Sends a byte array through the connection
      * @param msg the msg to send
      */
-    public void send(byte[] msg) {
+    public void send(byte[] msg) throws InterruptedException {
+        if(lock.isWriteLocked())
+            latch.await();
+        lock.writeLock().lock();
+        latch = new CountDownLatch(1);
         try {
             out.write(msg);
             out.flush();
+            lock.writeLock().unlock();
+            latch.countDown();
         } catch (IOException e) {
             e.printStackTrace();
         }

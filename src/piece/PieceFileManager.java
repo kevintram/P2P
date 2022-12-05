@@ -45,6 +45,7 @@ public class PieceFileManager {
 
         // adds a shutdown hook, so on client termination, temp files will combine if the file is complete
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Shutting down...");
             boolean complete = true;
             for (int i = 0; i < numPieces; i++){
                 try {
@@ -58,7 +59,7 @@ public class PieceFileManager {
             }
             if (complete) {
                 combine(fileName);
-                // logger.Logger.logComplete(us.id);
+                System.out.println("File combined...");
             }
         }));
     }

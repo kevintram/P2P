@@ -58,7 +58,7 @@ public class PeerTalker implements Runnable {
         sendBitfield();
     }
 
-    private void sendHandshake() {
+    private void sendHandshake() throws InterruptedException {
         // send a handshake
         nbr.connection.send(new Handshake(us.id).toByteArray());
 
