@@ -113,11 +113,12 @@ public class PeerTalker implements Runnable {
         while (conn.getSocket().isConnected()) {
             System.out.println(us.id + "->" + nbr.id + " waiting for a message...");
             PeerMessage msg = conn.readMessage();
-            System.out.println(us.id + "->" + nbr.id + " got a message!");
 
             if (msg == null) {
                 System.exit(0);
             }
+            System.out.println(us.id + "->" + nbr.id + " got a " + msg.type.name() + " message");
+
             switch (msg.type) {
                 case CHOKE:
                     //if choke, I cant download, dont request
@@ -183,7 +184,7 @@ public class PeerTalker implements Runnable {
     }
 
     private void respondToPieceMsg(PeerMessage msg) throws InterruptedException, IOException {
-        System.out.println(us.id + "->" + nbr.id + " got a have");
+        System.out.println(us.id + "->" + nbr.id + " got a piece");
         // write the piece down
         byte[] indexBuf = Arrays.copyOfRange(msg.payload, 0, 4);
         int index = Util.byteArrToInt(indexBuf);
