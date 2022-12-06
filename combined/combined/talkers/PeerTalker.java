@@ -36,7 +36,7 @@ public class PeerTalker implements Runnable {
     @Override
     public void run() {
         try {
-            start();
+            init();
             requestForPiecesIfInterested();
             waitForMessages();
         } catch (InterruptedException e) {

@@ -3,6 +3,7 @@ package talkers;
 import logger.Logger;
 import messages.Handshake;
 import messages.PeerMessage;
+import messages.Util;
 import neighbor.NeighborManager;
 import peer.Peer;
 import peer.PeerConnection;
@@ -11,7 +12,7 @@ import piece.PieceFileManager;
 import java.io.IOException;
 import java.net.Socket;
 
-import static messages.PeerMessage.Type.BITFIELD;
+import static messages.PeerMessage.Type.*;
 
 /**
  * The one who accepts and responds to handshakes
@@ -32,7 +33,7 @@ public class PeerResponder extends PeerTalker {
     }
 
     @Override
-    protected void start() throws InterruptedException, IOException {
+    protected void init() throws InterruptedException, IOException {
         receiveHandshake();
         receiveBitfield();
     }
@@ -43,20 +44,22 @@ public class PeerResponder extends PeerTalker {
         conn.read(buf, 32);
         Handshake handshake = new Handshake(buf);
         nm.getNeighborById(handshake.id).connection = conn;
-        nm.getNeighborById(handshake.id).isInit = true;
         nbr = nm.getNeighborById(handshake.id);
         nbr.connection.getSocket().setReceiveBufferSize(pfm.normalPieceSize + 10);
         // send back handshake
         conn.send(new Handshake(us.id).toByteArray());
         Logger.logConnectionEstablished(us.id, nbr.id);
-        nbr.isInit = true;
-
     }
 
     private void receiveBitfield() throws InterruptedException {
         // read bitfield
-        PeerMessage res = conn.readMessage();
-        nbr.setBitfield(res.payload);
+        PeerMessage bitfieldMsg = conn.readMessage();
+        nbr.setBitfield(bitfieldMsg.payload);
+
+        if (bitfieldMsg.type != BITFIELD) {
+            System.out.println("WE SHOULD'VE GOTTEN A BITFIELD!! BUT WE GOT A " + bitfieldMsg.type);
+            System.exit(-1);
+        }
 
         // send our bitfield
         conn.sendMessage(new PeerMessage(BITFIELD, us.getBitfield()));

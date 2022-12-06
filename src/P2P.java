@@ -23,6 +23,7 @@ public class P2P {
         startChokingThreads(nm.unchokeInterval, nm.optimInterval);
         waitForPeersToTalkToMe();
     }
+
     private static void genLogFile() throws IOException {
         File logFile =  new File("log_peer_"+us.id+".log");
         new FileWriter(logFile, false).close(); //clears the log from last run

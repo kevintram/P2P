@@ -19,11 +19,8 @@ public class PeerConnection {
     private OutputStream out;
     private InputStream in;
 
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    private CountDownLatch latch;
-
     public PeerConnection(String hostName, int port) {
-                while (socket == null || !socket.isConnected()) {
+        while (socket == null || !socket.isConnected()) {
             try {
                 socket = new Socket(hostName, port);
                 in = socket.getInputStream();
@@ -68,15 +65,11 @@ public class PeerConnection {
      * @param msg the msg to send
      */
     public void send(byte[] msg) throws InterruptedException {
-        if(lock.isWriteLocked())
-            latch.await();
-        lock.writeLock().lock();
-        latch = new CountDownLatch(1);
         try {
-            out.write(msg);
-            out.flush();
-            lock.writeLock().unlock();
-            latch.countDown();
+            synchronized (out) {
+                out.write(msg);
+                out.flush();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -94,15 +87,16 @@ public class PeerConnection {
      */
     public int read(byte[] buf, int len) {
         try {
-
-            // read over and over again until you've read number of bytes = len
-            int totalBytesRead = 0;
-            while (totalBytesRead < len) {
-                int bytesRead = in.read(buf, totalBytesRead, len - totalBytesRead);
-                if (bytesRead == -1) return -1;
-                totalBytesRead += bytesRead;
+            synchronized (in) {
+                // read over and over again until you've read number of bytes = len
+                int totalBytesRead = 0;
+                while (totalBytesRead < len) {
+                    int bytesRead = in.read(buf, totalBytesRead, len - totalBytesRead);
+                    if (bytesRead == -1) return -1;
+                    totalBytesRead += bytesRead;
+                }
+                return totalBytesRead;
             }
-            return totalBytesRead;
         }catch (SocketException e){
             return -1;
         }catch (IOException e) {
@@ -112,18 +106,20 @@ public class PeerConnection {
     }
 
     public PeerMessage readMessage() {
-        // get payload length
-        byte[] lenBuf = new byte[4];
-        if(read(lenBuf, 4) == -1) return null;
-        int len = Util.byteArrToInt(lenBuf);
-        // get type
-        byte[] typeBuf = new byte[1];
-        if(read(typeBuf, 1) == -1) return null;
-        PeerMessage.Type type = PeerMessage.Type.values()[typeBuf[0]];
-        // get payload
-        byte[] payload = new byte[len];
-        if(read(payload, len) == -1) return null;
-        return new PeerMessage(type, payload);
+        synchronized(in) {
+            // get payload length
+            byte[] lenBuf = new byte[4];
+            if(read(lenBuf, 4) == -1) return null;
+            int len = Util.byteArrToInt(lenBuf);
+            // get type
+            byte[] typeBuf = new byte[1];
+            if(read(typeBuf, 1) == -1) return null;
+            PeerMessage.Type type = PeerMessage.Type.values()[typeBuf[0]];
+            // get payload
+            byte[] payload = new byte[len];
+            if(read(payload, len) == -1) return null;
+            return new PeerMessage(type, payload);
+        }
     }
 
     public Socket getSocket(){

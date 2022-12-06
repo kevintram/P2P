@@ -1,5 +1,6 @@
 package neighbor;
 
+import messages.PeerMessage;
 import peer.Neighbor;
 
 import java.util.ArrayList;
@@ -26,5 +27,23 @@ public class NeighborManager {
 
     public List<Neighbor> getNeighbors() {
         return new ArrayList<>(idToNeighbor.values());
+    }
+
+    public boolean noNeighborsInterestedInUs() {
+        for (Neighbor n : getNeighbors()) {
+            if (n.theirInterestInUs == PeerMessage.Type.INTERESTED) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean allNeighborsDone() {
+        for (Neighbor n : idToNeighbor.values()) {
+            if (!n.hasFile) {
+                return false;
+            }
+        }
+        return true;
     }
 }

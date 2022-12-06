@@ -4,22 +4,21 @@ import messages.PeerMessage;
 
 public class Neighbor extends Peer {
     public PeerConnection connection;
-    public PeerMessage.Type interested;
-    public PeerMessage.Type theyInterest;
+    public PeerMessage.Type ourInterestInThem;
+    public PeerMessage.Type theirInterestInUs;
     public boolean canDown = false;
-    public int downlaodRate = 0;
     public boolean isInit = false;
     public Neighbor(int id, String hostName, int port, boolean hasFile) {
         super(id, hostName, port, hasFile);
     }
 
-    public void setInterested(PeerMessage.Type newInterest) throws InterruptedException {
-        if (interested == null) {
+    public void setOurInterestInThem(PeerMessage.Type newInterest) throws InterruptedException {
+        if (ourInterestInThem == null) {
             this.connection.sendMessage(new PeerMessage(newInterest, new byte[0]));
-        } else if (interested != newInterest) {
+        } else if (ourInterestInThem != newInterest) {
             this.connection.sendMessage(new PeerMessage(newInterest, new byte[0]));
         }
-        interested = newInterest;
+        ourInterestInThem = newInterest;
     }
 
 }

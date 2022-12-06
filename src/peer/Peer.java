@@ -54,12 +54,17 @@ public class Peer {
         return temp;
     }
 
-    public synchronized void updateBitfield(int index) throws InterruptedException {
+    public synchronized void updateBitfield(int index, int numPieces) throws InterruptedException, IOException {
         if(lock.isWriteLocked())
             latch.await();
         lock.writeLock().lock();
         latch = new CountDownLatch(1);
         this.bitfield[index] = 1;
+
+        if (finishedFile(numPieces)) {
+            hasFile = true;
+        }
+
         lock.writeLock().unlock();
         latch.countDown();
     }
@@ -85,7 +90,7 @@ public class Peer {
     }
 
 
-    public synchronized boolean finishedFile(int numPieces) throws IOException {
+    private synchronized boolean finishedFile(int numPieces) throws IOException {
         if(!hasFile) {
             int buffer = (8 - (numPieces % 8));
             for (int i = 0; i < bitfield.length - buffer; i++) {
