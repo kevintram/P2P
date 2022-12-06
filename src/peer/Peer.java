@@ -1,7 +1,5 @@
 package peer;
 
-import logger.Logger;
-
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -54,12 +52,17 @@ public class Peer {
         return temp;
     }
 
-    public synchronized void updateBitfield(int index) throws InterruptedException {
+    public void updateBitfield(int index, int numPieces) throws InterruptedException, IOException {
         if(lock.isWriteLocked())
             latch.await();
         lock.writeLock().lock();
         latch = new CountDownLatch(1);
         this.bitfield[index] = 1;
+        // we should really be doing this differently but idgaf
+        if (finishedFile(numPieces)) {
+            hasFile = true;
+        }
+
         lock.writeLock().unlock();
         latch.countDown();
     }
@@ -93,7 +96,6 @@ public class Peer {
                     return false;
                 }
             }
-            Logger.logComplete(this.id);
             return true;
         }
         return false;

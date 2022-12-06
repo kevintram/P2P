@@ -130,7 +130,10 @@ public class PeerTalker implements Runnable {
                 case HAVE:
                     Logger.logHave(us.id, nbr.id);
                     int i = Util.byteArrToInt(msg.payload);
-                    nbr.updateBitfield(i);
+                    nbr.updateBitfield(i, pfm.numPieces);
+                    if (nm.allNeighborsDone() && us.hasFile) { // terminate if everybody's done
+                        System.exit(0);
+                    }
                     if (us.getBitfield()[i] == 0) {
                         nbr.setInterested(INTERESTED);
                     }
@@ -175,18 +178,20 @@ public class PeerTalker implements Runnable {
         byte[] pieceContent = Arrays.copyOfRange(msg.payload, 4, msg.len);
 
         pfm.updatePieceFile(index, pieceContent);
-        us.updateBitfield(index);
+        us.updateBitfield(index, pfm.numPieces);
 
         Logger.logDownload(us.id, nbr.id, index);
         nbr.downloadRate++;
 
         // send haves to neighbors
         for (Neighbor n : nm.getNeighbors()) {
-            if(n.isInit) n.connection.sendMessage(new PeerMessage(HAVE, Util.intToByteArr(index)));
+            if(n.isInit && n.getBitfield() != null)
+                n.connection.sendMessage(new PeerMessage(HAVE, Util.intToByteArr(index)));
         }
 
-        if(us.finishedFile(pfm.numPieces))
-            us.hasFile = true;
+        if(us.hasFile) {
+            Logger.logComplete(us.id);
+        }
 
         if(nbr.canDown)
             requestForPiecesIfInterested();

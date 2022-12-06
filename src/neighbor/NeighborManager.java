@@ -27,4 +27,13 @@ public class NeighborManager {
     public List<Neighbor> getNeighbors() {
         return new ArrayList<>(idToNeighbor.values());
     }
+
+    public boolean allNeighborsDone() {
+        for (Neighbor n : getNeighbors()) {
+            if (!n.hasFile) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

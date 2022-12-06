@@ -21,6 +21,7 @@ public class ChokeHelper {
         this.nm = nm;
         this.us = us;
         this.numPrefNeighbors = nm.numPrefNeighbors;
+
         ChokeUnchokeTask ct = new ChokeUnchokeTask();
         OptimeChokeTask ot = new OptimeChokeTask();
         time.schedule(ct, 0, unchokeInterval * 1000);
@@ -31,7 +32,7 @@ public class ChokeHelper {
     static class SortbyDownload implements Comparator<Peer> {
         public int compare(Peer a, Peer b) {
             if (a.downloadRate == b.downloadRate) {
-                return new Random().nextInt(100) >= 50 ? -1 : 1;
+                return 0;
             }
             return (int) (a.downloadRate - b.downloadRate);
         }
@@ -57,9 +58,8 @@ public class ChokeHelper {
 
         boolean cont = false;
         for (Neighbor p : P2P.nm.unchoked) {
-
-            p.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, new byte[0]));
-
+            if(p.getBitfield() != null)
+                p.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, new byte[0]));
         }
         for (Neighbor n : nm.getNeighbors()) {
             if (n.theyInterest == PeerMessage.Type.INTERESTED) {
@@ -73,6 +73,7 @@ public class ChokeHelper {
             for (Neighbor n : nm.getNeighbors()) {
                 if (n.isInit && n.theyInterest == PeerMessage.Type.INTERESTED)
                     downloadList.add(n);
+
             }
             Collections.sort(downloadList, new SortbyDownload());
             if (downloadList.size() > numPrefNeighbors) {
@@ -100,7 +101,8 @@ public class ChokeHelper {
             Logger.logChangeNeighbors(us.id, nm.unchoked);
         }
         for (Neighbor p : nm.unchoked) {
-            p.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
+            if(p.getBitfield() != null)
+                p.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
         }
 
     }
@@ -120,7 +122,8 @@ public class ChokeHelper {
 
     public void optimChokeUnchoke() throws InterruptedException, IOException {
         if (nm.optimisticNeighbor != null) {
-            nm.optimisticNeighbor.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, new byte[0]));
+            if(nm.optimisticNeighbor.getBitfield() != null)
+                nm.optimisticNeighbor.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, new byte[0]));
         }
         if (nm.getNeighbors().size() <= nm.unchoked.size()) {
             return;
@@ -142,7 +145,8 @@ public class ChokeHelper {
             index = new Random().nextInt(nm.getNeighbors().size());
         nm.optimisticNeighbor = nm.getNeighbors().get(index);
         Logger.logOptChangeNeighbor(us.id, nm.optimisticNeighbor.id);
-        nm.optimisticNeighbor.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
+        if(nm.optimisticNeighbor.getBitfield() != null)
+            nm.optimisticNeighbor.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
     }
 
 
