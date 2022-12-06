@@ -3,11 +3,11 @@ package neighbor;
 import peer.Neighbor;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class NeighborManager {
-    private final HashMap<Integer, Neighbor> idToNeighbor = new HashMap<>();
+    private final ConcurrentHashMap<Integer, Neighbor> idToNeighbor = new ConcurrentHashMap<>();
     public final List<Neighbor> unchoked = new ArrayList<>();
     public Neighbor optimisticNeighbor;
     public int unchokeInterval;

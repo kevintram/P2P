@@ -10,7 +10,6 @@ import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class PeerConnection {
@@ -20,14 +19,12 @@ public class PeerConnection {
     private InputStream in;
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    private CountDownLatch latch;
 
     public PeerConnection(String hostName, int port) {
                 while (socket == null || !socket.isConnected()) {
             try {
                 socket = new Socket(hostName, port);
                 in = socket.getInputStream();
-
                 out = socket.getOutputStream();
                 out.flush();
             } catch(UnknownHostException e) {
@@ -68,15 +65,11 @@ public class PeerConnection {
      * @param msg the msg to send
      */
     public void send(byte[] msg) throws InterruptedException {
-        if(lock.isWriteLocked())
-            latch.await();
-        lock.writeLock().lock();
-        latch = new CountDownLatch(1);
         try {
+            lock.writeLock().lock();
             out.write(msg);
             out.flush();
             lock.writeLock().unlock();
-            latch.countDown();
         } catch (IOException e) {
             e.printStackTrace();
         }

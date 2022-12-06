@@ -181,12 +181,14 @@ public class PeerTalker implements Runnable {
         us.updateBitfield(index, pfm.numPieces);
 
         Logger.logDownload(us.id, nbr.id, index);
+        Thread.sleep(100);
         nbr.downloadRate++;
 
         // send haves to neighbors
         for (Neighbor n : nm.getNeighbors()) {
-            if(n.isInit && n.getBitfield() != null)
+            if(n.isInit && n.checkBitfield()){
                 n.connection.sendMessage(new PeerMessage(HAVE, Util.intToByteArr(index)));
+            }
         }
 
         if(us.hasFile) {
@@ -216,5 +218,4 @@ public class PeerTalker implements Runnable {
             return indices.get(random.nextInt(indices.size()));
         }
     }
-
 }

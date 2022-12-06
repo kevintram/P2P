@@ -15,7 +15,7 @@ public class Peer {
 
     public Long startTime;
 
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
     private CountDownLatch latch;
 
     public Peer(int id, String hostName, int port, boolean hasFile) {
@@ -40,55 +40,45 @@ public class Peer {
         }
         this.downloadRate = counterDown / (System.nanoTime() - startTime);
     }
+    //used to try and avoid locks
+    public boolean checkBitfield(){
+        return (bitfield != null);
+    }
 
-
-    public synchronized byte[] getBitfield() throws InterruptedException {
+    public byte[] getBitfield() throws InterruptedException {
         lock.readLock().lock();
         //to ensure a read happens after a write, lock until writer done
-        if(lock.isWriteLocked())
-            latch.await();
         byte [] temp = bitfield;
         lock.readLock().unlock();
         return temp;
     }
 
     public void updateBitfield(int index, int numPieces) throws InterruptedException, IOException {
-        if(lock.isWriteLocked())
-            latch.await();
         lock.writeLock().lock();
-        latch = new CountDownLatch(1);
         this.bitfield[index] = 1;
+        lock.writeLock().unlock();
         // we should really be doing this differently but idgaf
         if (finishedFile(numPieces)) {
             hasFile = true;
         }
 
-        lock.writeLock().unlock();
-        latch.countDown();
+
     }
 
-    public synchronized void setBitfield(byte[] newField) throws InterruptedException {
-        if(lock.isWriteLocked())
-            latch.await();
+    public void setBitfield(byte[] newField) throws InterruptedException {
         lock.writeLock().lock();
-        latch = new CountDownLatch(1);
         this.bitfield = newField;
         lock.writeLock().unlock();
-        latch.countDown();
     }
 
-    public synchronized void pendingBitfield(int index) throws InterruptedException {
-        if(lock.isWriteLocked())
-            latch.await();
+    public void pendingBitfield(int index) throws InterruptedException {
         lock.writeLock().lock();
-        latch = new CountDownLatch(1);
         this.bitfield[index] = -1;
         lock.writeLock().unlock();
-        latch.countDown();
     }
 
 
-    public synchronized boolean finishedFile(int numPieces) throws IOException {
+    public boolean finishedFile(int numPieces) throws IOException {
         if(!hasFile) {
             int buffer = (8 - (numPieces % 8));
             for (int i = 0; i < bitfield.length - buffer; i++) {

@@ -14,7 +14,7 @@ public class ChokeHelper {
     public int optimisticInterval;
     NeighborManager nm;
 
-    List<Neighbor> downloadList = new ArrayList<>();
+
 
     public ChokeHelper(NeighborManager nm, Peer us, int optimisticInterval, int unchokeInterval) {
         Timer time = new Timer();
@@ -55,10 +55,10 @@ public class ChokeHelper {
     //idk a good name for this, clears the unchoked array, the recreates it from neighbor list
     public void unchokeChoke() throws InterruptedException, IOException {
         //us.updateDownloadRate(P2P.pfm.numPieces);
-
+        List<Neighbor> downloadList = new ArrayList<>();
         boolean cont = false;
         for (Neighbor p : P2P.nm.unchoked) {
-            if(p.getBitfield() != null)
+            if(p.checkBitfield())
                 p.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, new byte[0]));
         }
         for (Neighbor n : nm.getNeighbors()) {
@@ -101,7 +101,7 @@ public class ChokeHelper {
             Logger.logChangeNeighbors(us.id, nm.unchoked);
         }
         for (Neighbor p : nm.unchoked) {
-            if(p.getBitfield() != null)
+            if(p.checkBitfield())
                 p.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
         }
 
@@ -122,7 +122,7 @@ public class ChokeHelper {
 
     public void optimChokeUnchoke() throws InterruptedException, IOException {
         if (nm.optimisticNeighbor != null) {
-            if(nm.optimisticNeighbor.getBitfield() != null)
+            if(nm.optimisticNeighbor.checkBitfield())
                 nm.optimisticNeighbor.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, new byte[0]));
         }
         if (nm.getNeighbors().size() <= nm.unchoked.size()) {
@@ -140,12 +140,16 @@ public class ChokeHelper {
                 System.exit(1);
             return;
         }
+        if(nm.getNeighbors().size() == nm.unchoked.size()){
+            nm.optimisticNeighbor = null;
+            return;
+        }
         int index = new Random().nextInt(nm.getNeighbors().size());
         while (nm.unchoked.contains(nm.getNeighbors().get(index)) || !nm.getNeighbors().get(index).isInit)
             index = new Random().nextInt(nm.getNeighbors().size());
         nm.optimisticNeighbor = nm.getNeighbors().get(index);
         Logger.logOptChangeNeighbor(us.id, nm.optimisticNeighbor.id);
-        if(nm.optimisticNeighbor.getBitfield() != null)
+        if(nm.optimisticNeighbor.checkBitfield())
             nm.optimisticNeighbor.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
     }
 
