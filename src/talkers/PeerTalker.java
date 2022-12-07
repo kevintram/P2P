@@ -119,6 +119,18 @@ public class PeerTalker implements Runnable {
             }
             System.out.println(us.id + "->" + nbr.id + " got a " + msg.type.name() + " message");
 
+            new Thread(() -> {
+                try {
+                    respond(msg);
+                } catch (IOException | InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+        }
+    }
+
+    private void respond(PeerMessage msg) throws IOException, InterruptedException {
+        synchronized(nbr) {
             switch (msg.type) {
                 case CHOKE:
                     //if choke, I cant download, dont request
@@ -200,7 +212,9 @@ public class PeerTalker implements Runnable {
         // send haves to neighbors
         System.out.println(us.id + "->" + nbr.id + " sending haves to neighbors");
         for (Neighbor n : nm.getNeighbors()) {
+            System.out.println(us.id + " SENIDNG HAVE TO " + nbr.id);
             if(n.isInit) n.connection.sendMessage(new PeerMessage(HAVE, Util.intToByteArr(index)));
+            System.out.println(us.id + " SENT HAVE TO " + nbr.id);
         }
         System.out.println(us.id + "->" + nbr.id + " finished sending haves to neighbors");
 

@@ -55,11 +55,11 @@ public class StartRemotePeers {
  * folder.
  */
 
-		peerList.add(new PeerInfo("1", "lin114-00.cise.ufl.edu"));
-		peerList.add(new PeerInfo("2", "lin114-01.cise.ufl.edu"));
-		peerList.add(new PeerInfo("3", "lin114-02.cise.ufl.edu"));
-	//	peerList.add(new PeerInfo("1004", "lin114-03.cise.ufl.edu"));
-	//	peerList.add(new PeerInfo("1005", "lin114-04.cise.ufl.edu"));
+		peerList.add(new PeerInfo("1001", "lin114-00.cise.ufl.edu"));
+		peerList.add(new PeerInfo("1002", "lin114-01.cise.ufl.edu"));
+		peerList.add(new PeerInfo("1003", "lin114-02.cise.ufl.edu"));
+		peerList.add(new PeerInfo("1004", "lin114-03.cise.ufl.edu"));
+		peerList.add(new PeerInfo("1005", "lin114-04.cise.ufl.edu"));
 
 		for (PeerInfo remotePeer : peerList) {
 			try {
@@ -73,7 +73,7 @@ public class StartRemotePeers {
 				//jsch.addIdentity("C:\\Users\\lackt\\.ssh\\private", "C:\\Users\\lackt\\.ssh\\id_rsa.pub", null);
 				Session session = jsch.getSession(ciseUser, remotePeer.getHostName(), 22);
 				//imma trust yall not to steal my password, the key system didnt work
-				session.setPassword("Derpderp78");
+				session.setPassword("n9TQ_2JmwWr6p_h");
 				Properties config = new Properties();
 				config.put("StrictHostKeyChecking", "no");
 				session.setConfig(config);

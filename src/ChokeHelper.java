@@ -12,7 +12,7 @@ public class ChokeHelper {
     public int numPrefNeighbors;
     NeighborManager nm;
 
-    List<Neighbor> downloadList = new ArrayList<>();
+
 
     public ChokeHelper(NeighborManager nm, Peer us, int optimisticInterval, int unchokeInterval) {
         Timer time = new Timer();
@@ -38,7 +38,7 @@ public class ChokeHelper {
 
     //idk a good name for this, clears the unchoked array, the recreates it from neighbor list
     public void unchokeChoke() throws InterruptedException, IOException {
-
+        List<Neighbor> downloadList = new ArrayList<>();
         if (nm.noNeighborsInterestedInUs()) return; // don't do anything if nobody is interested in us
 
         nm.unchoked.clear();

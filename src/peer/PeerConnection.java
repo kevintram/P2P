@@ -10,8 +10,6 @@ import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class PeerConnection {
 
@@ -69,6 +67,7 @@ public class PeerConnection {
             synchronized (out) {
                 out.write(msg);
                 out.flush();
+                System.out.println("MESSAGE FUCKING SENT");
             }
         } catch (IOException e) {
             e.printStackTrace();

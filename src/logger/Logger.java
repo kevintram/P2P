@@ -8,10 +8,21 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Logger {
+
+    private static final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
     public static String getTime() {
         return LocalDateTime.now().format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM));
+    }
+
+    private static void writeToFiles(String name, String msg) throws IOException {
+        lock.writeLock().lock();
+        FileWriter writer = new FileWriter(name, true);
+        writer.write(msg);
+        writer.close();
+        lock.writeLock().unlock();
     }
 
     /**
@@ -20,9 +31,8 @@ public class Logger {
      * @param connectionID ID of the peer being connected to
      */
     public static void logMakeConnection(int hostID, int connectionID) throws IOException {
-        FileWriter writer = new FileWriter("log_peer_"+hostID+".log", true);
-        writer.write(String.format("[%s]: Peer [%d] makes a connection to Peer [%d]%n", getTime(), hostID, connectionID));
-        writer.close();
+        String msg = String.format("[%s]: Peer [%d] makes a connection to Peer [%d]%n", getTime(), hostID, connectionID);
+        writeToFiles("log_peer_"+hostID+".log", msg);
     }
 
     /**
@@ -31,9 +41,8 @@ public class Logger {
      * @param connectionID ID of the peer being connected to
      */
     public static void logConnectionEstablished(int hostID, int connectionID) throws IOException {
-        FileWriter writer = new FileWriter("log_peer_"+hostID+".log", true);
-        writer.write(String.format("[%s]: Peer [%d] is connected from Peer [%d]%n", getTime(), hostID, connectionID));
-        writer.close();
+        String msg = String.format("[%s]: Peer [%d] is connected from Peer [%d]%n", getTime(), hostID, connectionID);
+        writeToFiles("log_peer_"+hostID+".log", msg);
     }
 
     /**
@@ -41,16 +50,15 @@ public class Logger {
      * @param peers Array of Peers.
      */
     public static void logChangeNeighbors(int hostID, List<Neighbor> peers) throws IOException {
-        FileWriter writer = new FileWriter("log_peer_"+hostID+".log", true);
-        writer.write(String.format("[%s]: Peer [%d] has the preferred neighbors [", getTime(), hostID));
+        String msg = String.format("[%s]: Peer [%d] has the preferred neighbors [", getTime(), hostID);
         for(int i = 0; i < peers.size(); i++){
             if(i < peers.size() - 1)
-                writer.write(String.format("%d,",peers.get(i).id));
+                msg += String.format("%d,",peers.get(i).id);
             else
-                writer.write(String.format("%d",peers.get(i).id));
+                msg += String.format("%d",peers.get(i).id);
         }
-        writer.write(String.format("]%n"));
-        writer.close();
+        msg += String.format("]%n");
+        writeToFiles("log_peer_"+hostID+".log", msg);
     }
 
     /**
@@ -59,9 +67,8 @@ public class Logger {
      * @param peerID id of new Optimistic neighbor
      */
     public static void logOptChangeNeighbor(int hostID, int peerID) throws IOException {
-        FileWriter writer = new FileWriter("log_peer_"+hostID+".log", true);
-        writer.write(String.format("[%s]: Peer [%d] has the optimistically unchoked neighbor [%d]%n", getTime(), hostID, peerID));
-        writer.close();
+        String msg = String.format("[%s]: Peer [%d] has the optimistically unchoked neighbor [%d]%n", getTime(), hostID, peerID);
+        writeToFiles("log_peer_"+hostID+".log", msg);
     }
 
     /**
@@ -70,9 +77,8 @@ public class Logger {
      * @param p2ID Peer.Peer unchoking
      */
     public static void logUnchoke(int p1ID, int p2ID) throws IOException {
-        FileWriter writer = new FileWriter("log_peer_"+p1ID+".log", true);
-        writer.write(String.format("[%s]: Peer [%d] is unchoked by [%d]%n", getTime(), p1ID, p2ID));
-        writer.close();
+        String msg = String.format("[%s]: Peer [%d] is unchoked by [%d]%n", getTime(), p1ID, p2ID);
+        writeToFiles("log_peer_"+p1ID+".log", msg);
     }
 
     /**
@@ -81,9 +87,8 @@ public class Logger {
      * @param p2ID peer doing the choking
      */
     public static void logChoke(int p1ID, int p2ID) throws IOException {
-        FileWriter writer = new FileWriter("log_peer_"+p1ID+".log", true);
-        writer.write(String.format("[%s]: Peer [%d] is choked by [%d]%n", getTime(), p1ID, p2ID));
-        writer.close();
+        String msg = String.format("[%s]: Peer [%d] is choked by [%d]%n", getTime(), p1ID, p2ID);
+        writeToFiles("log_peer_"+p1ID+".log", msg);
     }
 
     /**
@@ -92,9 +97,8 @@ public class Logger {
      * @param peerID peer that is interested
      */
     public static void logInterest(int hostID, int peerID) throws IOException {
-        FileWriter writer = new FileWriter("log_peer_"+hostID+".log", true);
-        writer.write(String.format("[%s]: Peer [%d] received the 'interested' message from [%d]%n", getTime(), hostID, peerID));
-        writer.close();
+        String msg = String.format("[%s]: Peer [%d] received the 'interested' message from [%d]%n", getTime(), hostID, peerID);
+        writeToFiles("log_peer_"+hostID+".log", msg);
     }
 
 
@@ -104,9 +108,8 @@ public class Logger {
      * @param peerID peer that is not interested
      */
     public static void logNotInterest(int hostID, int peerID) throws IOException {
-        FileWriter writer = new FileWriter("log_peer_"+hostID+".log", true);
-        writer.write(String.format("[%s]: Peer [%d] received the 'not interested' message from [%d]%n", getTime(), hostID, peerID));
-        writer.close();
+        String msg = String.format("[%s]: Peer [%d] received the 'not interested' message from [%d]%n", getTime(), hostID, peerID);
+        writeToFiles("log_peer_"+hostID+".log", msg);
     }
 
     /**
@@ -115,9 +118,8 @@ public class Logger {
      * @param peerID peer sending have
      */
     public static void logHave(int hostID, int peerID) throws IOException {
-        FileWriter writer = new FileWriter("log_peer_"+hostID+".log", true);
-        writer.write(String.format("[%s]: Peer [%d] received the 'have' message from [%d]%n", getTime(), hostID, peerID));
-        writer.close();
+        String msg = String.format("[%s]: Peer [%d] received the 'have' message from [%d]%n", getTime(), hostID, peerID);
+        writeToFiles("log_peer_"+hostID+".log", msg);
     }
 
 
@@ -128,9 +130,8 @@ public class Logger {
      * @param pieceIndex index of piece being downloaded
      */
     public static void logDownload(int hostID, int peerID, int pieceIndex) throws IOException {
-        FileWriter writer = new FileWriter("log_peer_"+hostID+".log", true);
-        writer.write(String.format("[%s]: Peer [%d] has downloaded the piece [%d] from [%d]%n", getTime(), hostID, pieceIndex, peerID));
-        writer.close();
+        String msg = String.format("[%s]: Peer [%d] has downloaded the piece [%d] from [%d]%n", getTime(), hostID, pieceIndex, peerID);
+        writeToFiles("log_peer_"+hostID+".log", msg);
     }
 
     /**
@@ -138,8 +139,7 @@ public class Logger {
      * @param hostID local peer
      */
     public static void logComplete(int hostID) throws IOException {
-        FileWriter writer = new FileWriter("log_peer_"+hostID+".log", true);
-        writer.write(String.format("[%s]: Peer [%d] has downloaded the complete file%n", getTime(), hostID));
-        writer.close();
+        String msg = String.format("[%s]: Peer [%d] has downloaded the complete file%n", getTime(), hostID);
+        writeToFiles("log_peer_"+hostID+".log", msg);
     }
 }

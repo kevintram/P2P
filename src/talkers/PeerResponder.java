@@ -3,7 +3,6 @@ package talkers;
 import logger.Logger;
 import messages.Handshake;
 import messages.PeerMessage;
-import messages.Util;
 import neighbor.NeighborManager;
 import peer.Peer;
 import peer.PeerConnection;
@@ -12,7 +11,7 @@ import piece.PieceFileManager;
 import java.io.IOException;
 import java.net.Socket;
 
-import static messages.PeerMessage.Type.*;
+import static messages.PeerMessage.Type.BITFIELD;
 
 /**
  * The one who accepts and responds to handshakes
