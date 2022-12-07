@@ -49,9 +49,11 @@ public class P2P {
             boolean hasFile = Integer.parseInt(lineSplit[3]) == 1;
 
             if (id == ourId) {
+                System.out.println("found us: id: " + id + " hostname: " + hostName + " port: " + port + " have file: " + hasFile);
                 us = new Peer(id, hostName , port, hasFile);
                 foundUs = true;
             } else {
+                System.out.println("found peer: id: " + id + " hostname: " + hostName + " port: " + port + " have file: " + hasFile);
                 neighbors.add(new Neighbor(id, hostName, port, hasFile));
             }
         }
@@ -79,23 +81,27 @@ public class P2P {
         ss = br.readLine().split(" ");
         int numPrefNeighbors = Integer.parseInt(ss[1]);
         nm.numPrefNeighbors = numPrefNeighbors;
+        System.out.println("numPrefNeighbors set as: " + numPrefNeighbors);
         ss = br.readLine().split(" ");
         int unchokeInterval = Integer.parseInt(ss[1]);
-
+        System.out.println("unchoke inteval set as: " + unchokeInterval);
         ss = br.readLine().split(" ");
         int optimisticInterval = Integer.parseInt(ss[1]);
+        System.out.println("optimisticInterval set as: " + optimisticInterval);
 
         nm.optimInterval = optimisticInterval;
         nm.unchokeInterval = unchokeInterval;
 
         ss = br.readLine().split(" ");
         String fileName = ss[1];
-
+        System.out.println("File name set as: " + fileName);
         ss = br.readLine().split(" ");
         int fileSize = Integer.parseInt(ss[1]);
+        System.out.println("File size set as: " + fileSize);
 
         ss = br.readLine().split(" ");
         int pieceSize = Integer.parseInt(ss[1]);
+        System.out.println("Piece Size set as: " + pieceSize);
 
         int numPieces =  (int)Math.ceil((double)fileSize / pieceSize);
         int finalPieceSize = fileSize % pieceSize;
@@ -118,6 +124,7 @@ public class P2P {
         }
 
         us.setBitfield(bitField);
+        System.out.println("Bitfield set as:  " + Arrays.toString(bitField));
         pfm.makePieces(us);
     }
 

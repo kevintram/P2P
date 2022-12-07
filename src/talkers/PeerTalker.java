@@ -39,7 +39,6 @@ public class PeerTalker implements Runnable {
         try {
             init();
             nbr.isInit = true;
-            requestForPiecesIfInterested();
             waitForMessages();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -102,7 +101,6 @@ public class PeerTalker implements Runnable {
 
             System.out.println(us.id + "->" + nbr.id + " sending a request");
             nbr.connection.sendMessage(new PeerMessage(REQUEST, Util.intToByteArr(i)));
-
         }
     }
 
@@ -130,52 +128,54 @@ public class PeerTalker implements Runnable {
     }
 
     private void respond(PeerMessage msg) throws IOException, InterruptedException {
-        synchronized(nbr) {
-            switch (msg.type) {
-                case CHOKE:
-                    //if choke, I cant download, dont request
-                    nbr.canDown = false;
-                    Logger.logChoke(us.id, nbr.id);
-                    break;
-                case UNCHOKE:
-                    //if unchoke, I can download
-                    nbr.canDown = true;
-                    Logger.logUnchoke(us.id, nbr.id);
-                    requestForPiecesIfInterested();
-                    break;
-                case INTERESTED:
-                    nbr.theirInterestInUs = INTERESTED;
-                    Logger.logInterest(us.id, nbr.id);
-                    break;
-                case NOT_INTERESTED:
-                    nbr.theirInterestInUs = NOT_INTERESTED;
-                    Logger.logNotInterest(us.id, nbr.id);
-                    break;
-                case HAVE:
-                    Logger.logHave(us.id, nbr.id);
-                    int i = Util.byteArrToInt(msg.payload);
-                    nbr.updateBitfield(i, pfm.numPieces);
-
-                    leaveIfEverybodyDone();
-
-                    if (us.getBitfield()[i] == 0) {
-                        nbr.setOurInterestInThem(INTERESTED);
-                    }
-
-                    if (nbr.canDown) {
+        synchronized (nbr) {
+            synchronized (nm) {
+                switch (msg.type) {
+                    case CHOKE:
+                        //if choke, I cant download, dont request
+                        nbr.canDown = false;
+                        Logger.logChoke(us.id, nbr.id);
+                        break;
+                    case UNCHOKE:
+                        //if unchoke, I can download
+                        nbr.canDown = true;
+                        Logger.logUnchoke(us.id, nbr.id);
                         requestForPiecesIfInterested();
-                    }
-                    break;
-                case BITFIELD:
-                    throw new RuntimeException("Received a bitfield message from " + nbr.id + " (we shouldn't have)");
-                case REQUEST:
-                    respondToRequestMsg(msg);
-                    break;
-                case PIECE:
-                    respondToPieceMsg(msg);
-                    break;
-                default:
-                    throw new RuntimeException("Invalid Message Type");
+                        break;
+                    case INTERESTED:
+                        nbr.theirInterestInUs = INTERESTED;
+                        Logger.logInterest(us.id, nbr.id);
+                        break;
+                    case NOT_INTERESTED:
+                        nbr.theirInterestInUs = NOT_INTERESTED;
+                        Logger.logNotInterest(us.id, nbr.id);
+                        break;
+                    case HAVE:
+                        Logger.logHave(us.id, nbr.id);
+                        int i = Util.byteArrToInt(msg.payload);
+                        nbr.updateBitfield(i, pfm.numPieces);
+
+                        leaveIfEverybodyDone();
+
+                        if (us.getBitfield()[i] == 0) {
+                            nbr.setOurInterestInThem(INTERESTED);
+                        }
+
+                        if (nbr.canDown) {
+                            requestForPiecesIfInterested();
+                        }
+                        break;
+                    case BITFIELD:
+                        throw new RuntimeException("Received a bitfield message from " + nbr.id + " (we shouldn't have)");
+                    case REQUEST:
+                        respondToRequestMsg(msg);
+                        break;
+                    case PIECE:
+                        respondToPieceMsg(msg);
+                        break;
+                    default:
+                        throw new RuntimeException("Invalid Message Type");
+                }
             }
         }
     }
@@ -212,17 +212,17 @@ public class PeerTalker implements Runnable {
         // send haves to neighbors
         System.out.println(us.id + "->" + nbr.id + " sending haves to neighbors");
         for (Neighbor n : nm.getNeighbors()) {
-            System.out.println(us.id + " SENIDNG HAVE TO " + nbr.id);
+            System.out.println(us.id + " sending have to " + nbr.id);
             if(n.isInit) n.connection.sendMessage(new PeerMessage(HAVE, Util.intToByteArr(index)));
-            System.out.println(us.id + " SENT HAVE TO " + nbr.id);
+            System.out.println(us.id + " sent have to " + nbr.id);
         }
         System.out.println(us.id + "->" + nbr.id + " finished sending haves to neighbors");
 
         if (nbr.canDown) {
-            System.out.println(us.id + "->" + nbr.id + " I can download");
+            System.out.println(us.id + "->" + nbr.id + "can download because unchoked");
             requestForPiecesIfInterested();
         } else {
-            System.out.println(us.id + "->" + nbr.id + " I can't download");
+            System.out.println(us.id + "->" + nbr.id + "can't download because choked");
         }
     }
 
@@ -248,7 +248,7 @@ public class PeerTalker implements Runnable {
 
     private void leaveIfEverybodyDone() {
         if (nm.allNeighborsDone() && us.hasFile) {
-            System.out.println(us.id + " IS FUCKING DONE AND LEAVING");
+            System.out.println(us.id + " has finished, starting exit...");
             System.exit(0);
         }
     }

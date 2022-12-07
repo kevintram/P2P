@@ -61,9 +61,7 @@ public class Peer {
         latch = new CountDownLatch(1);
         this.bitfield[index] = 1;
 
-        if (finishedFile(numPieces)) {
-            hasFile = true;
-        }
+        finishedFile(numPieces);
 
         lock.writeLock().unlock();
         latch.countDown();
@@ -99,6 +97,7 @@ public class Peer {
                 }
             }
             Logger.logComplete(this.id);
+            this.hasFile = true;
             return true;
         }
         return false;

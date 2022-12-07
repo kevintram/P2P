@@ -67,7 +67,7 @@ public class PeerConnection {
             synchronized (out) {
                 out.write(msg);
                 out.flush();
-                System.out.println("MESSAGE FUCKING SENT");
+                System.out.println("Message has Sent");
             }
         } catch (IOException e) {
             e.printStackTrace();

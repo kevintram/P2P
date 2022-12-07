@@ -12,8 +12,6 @@ public class ChokeHelper {
     public int numPrefNeighbors;
     NeighborManager nm;
 
-
-
     public ChokeHelper(NeighborManager nm, Peer us, int optimisticInterval, int unchokeInterval) {
         Timer time = new Timer();
         this.nm = nm;
@@ -38,43 +36,55 @@ public class ChokeHelper {
 
     //idk a good name for this, clears the unchoked array, the recreates it from neighbor list
     public void unchokeChoke() throws InterruptedException, IOException {
-        List<Neighbor> downloadList = new ArrayList<>();
-        if (nm.noNeighborsInterestedInUs()) return; // don't do anything if nobody is interested in us
+        synchronized (nm) {
 
-        nm.unchoked.clear();
+            if (nm.noNeighborsInterestedInUs()) return; // don't do anything if nobody is interested in us
 
-        if (!us.hasFile) {
-            //sorts neighbors by download rate, and picks the top n
-            for (Neighbor n : nm.getNeighbors()) {
-                if (n.isInit && n.theirInterestInUs == PeerMessage.Type.INTERESTED) downloadList.add(n);
+            ArrayList<Neighbor> newUnchoked = new ArrayList<>();
+
+            if (!us.hasFile) {
+                List<Neighbor> downloadList = new ArrayList<>(); // neighbors we're interested in aka ones we're downloading from
+                for (Neighbor n : nm.getNeighbors()) {
+                    if (n.isInit && n.ourInterestInThem == PeerMessage.Type.INTERESTED) downloadList.add(n);
+                }
+
+                // add top k neighbors to unchoked
+                downloadList.sort((a, b) -> (int) (a.downloadRate - b.downloadRate)); // sort by download rate
+                newUnchoked.addAll(downloadList.subList(0, Math.min(downloadList.size(), numPrefNeighbors)));
+
+
+            } else {
+                //picks random neighbors to unchoke
+                for (int i = 0; i < numPrefNeighbors; i++) {
+                    Neighbor randNeighbor = getRandomNeighbor();
+                    // keep on picking a random neighbor until you get one that already isn't unchoked
+                    while (randNeighbor == nm.optimisticNeighbor || newUnchoked.contains(randNeighbor) || !randNeighbor.isInit) {
+                        randNeighbor = getRandomNeighbor();
+                    }
+                    newUnchoked.add(randNeighbor);
+                }
             }
-
-            // add top k neighbors to unchoked
-            downloadList.sort((a, b) -> (int) (a.downloadRate - b.downloadRate)); // sort by download rate
-            nm.unchoked.addAll(downloadList.subList(0, Math.min(downloadList.size(), numPrefNeighbors)));
-
             // reset all download rates
             for (Neighbor nbr : nm.getNeighbors()) {
                 nbr.downloadRate = 0;
             }
-        } else {
-            //picks random neighbors to unchoke
-            for (int i = 0; i < numPrefNeighbors; i++) {
-                Neighbor randNeighbor = getRandomNeighbor();
-                // keep on picking a random neighbor until you get one that already isn't unchoked
-                while (nm.unchoked.contains(randNeighbor) || !randNeighbor.isInit) {
-                    randNeighbor = getRandomNeighbor();
+            Logger.logChangeNeighbors(us.id, newUnchoked);
+
+            for (Neighbor n : newUnchoked) {
+                if (!nm.unchoked.contains(n) && nm.optimisticNeighbor != n) { // send unchokes to neighbors newly unchoked
+                    n.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
                 }
-                nm.unchoked.add(randNeighbor);
             }
+
+            for (Neighbor n : nm.unchoked) {
+                if (!newUnchoked.contains(n) && nm.optimisticNeighbor != n) { // send chokes to neighbors not choked anymore
+                    n.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, new byte[0]));
+                }
+            }
+
+            nm.unchoked.clear();
+            nm.unchoked.addAll(newUnchoked);
         }
-
-        Logger.logChangeNeighbors(us.id, nm.unchoked);
-
-        for (Neighbor p : nm.unchoked) {
-            p.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
-        }
-
     }
 
     public class OptimUnChoke extends TimerTask {
@@ -89,23 +99,31 @@ public class ChokeHelper {
     }
 
     public void optimChokeUnchoke() throws InterruptedException, IOException {
-        if (nm.optimisticNeighbor != null) {
-            nm.optimisticNeighbor.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, new byte[0]));
-        }
+        synchronized (nm) {
+            if (nm.noNeighborsInterestedInUs()) return; // don't do anything if nobody is interested in us
 
-        if (nm.noNeighborsInterestedInUs()) return; // don't do anything if nobody is interested in us
-        if (nm.getNeighbors().size() <= nm.unchoked.size()) {
-            return;
-        }
+            if (nm.getNeighbors().size() <= nm.unchoked.size()) {
+                return;
+            }
 
-        Neighbor randNeighbor = getRandomNeighbor();
-        while (!randNeighbor.isInit) {
-            randNeighbor = getRandomNeighbor();
-        }
-        nm.optimisticNeighbor = randNeighbor;
+            Neighbor newOptimNbr = getRandomNeighbor();
+            while (!newOptimNbr.isInit || nm.unchoked.contains(newOptimNbr)) {
+                newOptimNbr = getRandomNeighbor();
+            }
 
-        Logger.logOptChangeNeighbor(us.id, nm.optimisticNeighbor.id);
-        nm.optimisticNeighbor.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
+            if (newOptimNbr != nm.optimisticNeighbor) { // if the neighbor changed
+                if (!nm.unchoked.contains(newOptimNbr)) { // send an unchoke if new not already unchoked
+                    newOptimNbr.connection.sendMessage(new PeerMessage(PeerMessage.Type.UNCHOKE, new byte[0]));
+                }
+
+                if (!nm.unchoked.contains(nm.optimisticNeighbor) && nm.optimisticNeighbor != null) {  // send a choke if old is now choked
+                    nm.optimisticNeighbor.connection.sendMessage(new PeerMessage(PeerMessage.Type.CHOKE, new byte[0]));
+                }
+            }
+
+            nm.optimisticNeighbor = newOptimNbr;
+            Logger.logOptChangeNeighbor(us.id, nm.optimisticNeighbor.id);
+        }
     }
 
     private Neighbor getRandomNeighbor() {
